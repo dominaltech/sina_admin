@@ -351,6 +351,86 @@
       return target;
     }
 
+    // 3b. FIRMS DIRECTORY & REPRESENTATIVE SPENDING SUMMARY
+    async getFirmsSummary() {
+      const entries = await this.getProcurementEntries();
+      const savedFirms = JSON.parse(localStorage.getItem('sina_firms') || '[]');
+      const firmsMap = new Map();
+
+      // Initialize with known registered firms
+      savedFirms.forEach(f => {
+        const key = f.firm_name.trim().toLowerCase();
+        firmsMap.set(key, {
+          id: f.id || 'f_' + Math.random().toString(36).substr(2, 9),
+          firm_name: f.firm_name.trim(),
+          contact_person: f.contact_person || '',
+          mobile: f.mobile || '',
+          address: f.address || '',
+          total_visits: 0,
+          total_spent: 0,
+          last_visited: null,
+          visits: []
+        });
+      });
+
+      // Aggregate procurement entries per firm
+      entries.forEach(entry => {
+        const firmName = (entry.firm_name || 'Unnamed Firm').trim();
+        const key = firmName.toLowerCase();
+
+        let firm = firmsMap.get(key);
+        if (!firm) {
+          firm = {
+            id: entry.firm_id || 'f_' + Math.random().toString(36).substr(2, 9),
+            firm_name: firmName,
+            contact_person: entry.contact_person || '',
+            mobile: entry.mobile || '',
+            address: entry.address || '',
+            total_visits: 0,
+            total_spent: 0,
+            last_visited: null,
+            visits: []
+          };
+          firmsMap.set(key, firm);
+        }
+
+        if (entry.contact_person && !firm.contact_person) firm.contact_person = entry.contact_person;
+        if (entry.mobile && !firm.mobile) firm.mobile = entry.mobile;
+        if (entry.address && !firm.address) firm.address = entry.address;
+
+        const amount = parseFloat(entry.total_amount || 0);
+        firm.total_visits += 1;
+        firm.total_spent += amount;
+
+        const visitTime = new Date(entry.created_at).getTime();
+        if (!firm.last_visited || visitTime > new Date(firm.last_visited).getTime()) {
+          firm.last_visited = entry.created_at;
+        }
+
+        firm.visits.push({
+          id: entry.id,
+          rep_id: entry.representative_id,
+          rep_name: entry.rep_name || 'Rahul Sharma',
+          created_at: entry.created_at,
+          amount: amount,
+          item_name: entry.type || entry.category_name || 'Goods',
+          quantity: entry.quantity,
+          unit: entry.unit,
+          rate: entry.rate,
+          payment_mode: entry.payment_mode || 'cash',
+          status: entry.status || 'completed'
+        });
+      });
+
+      const result = Array.from(firmsMap.values());
+      result.forEach(f => {
+        f.visits.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      });
+
+      result.sort((a, b) => b.total_spent - a.total_spent);
+      return result;
+    }
+
     // 4. CASH FLOATS & EXPENSES
     async getDailyFloats() {
       const remote = await this.supabaseRequest('daily_floats?select=*&order=date.desc');

@@ -8,7 +8,7 @@
     const currentPath = window.location.pathname;
     const isHome = currentPath.endsWith('index.html') || currentPath.endsWith('/') || currentPath.endsWith('SINA%20Admin/') || currentPath.endsWith('SINA Admin/');
     const isReps = currentPath.endsWith('representatives.html') || currentPath.endsWith('rep-detail.html');
-    const isCatalog = currentPath.endsWith('catalog.html');
+    const isFirms = currentPath.endsWith('firms.html') || currentPath.endsWith('catalog.html');
     const isApprovals = currentPath.endsWith('approvals.html');
 
     const icons = window.SINA_ICONS;
@@ -82,9 +82,9 @@
             <span class="nav-icon">${icons.get('users', { size: 20 })}</span>
             <span class="nav-label">Representatives & Passwords</span>
           </a>
-          <a href="catalog.html" class="drawer-link ${isCatalog ? 'active' : ''}">
-            <span class="nav-icon">${icons.get('catalog', { size: 20 })}</span>
-            <span class="nav-label">Product & Rate Master</span>
+          <a href="firms.html" class="drawer-link ${isFirms ? 'active' : ''}">
+            <span class="nav-icon">${icons.get('store', { size: 20 }) || icons.get('cart', { size: 20 })}</span>
+            <span class="nav-label">Firms & Mandi Directory</span>
           </a>
           <a href="approvals.html" class="drawer-link ${isApprovals ? 'active' : ''}">
             <span class="nav-icon">${icons.get('checkCircle', { size: 20 })}</span>
