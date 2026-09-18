@@ -108,24 +108,27 @@
 
     card.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--purple-primary);">Field Cash Float Reconciliation</h3>
-        <span class="status-badge active">Audited Live</span>
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--purple-primary);">Today's Cash Balance Summary</h3>
+          <p class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">Daily summary of cash given, collected, spent, and balance in hand</p>
+        </div>
+        <span class="status-badge active">Live Balance</span>
       </div>
       <div class="recon-grid">
         <div class="recon-item">
-          <div class="recon-item-lbl">Disbursed Float (Morning)</div>
+          <div class="recon-item-lbl">Morning Cash Given</div>
           <div class="recon-item-val">₹${m.totalFloatDisbursed.toLocaleString('en-IN')}</div>
         </div>
         <div class="recon-item">
-          <div class="recon-item-lbl">Procurement Cash Collected</div>
+          <div class="recon-item-lbl">Cash Collected in Field</div>
           <div class="recon-item-val" style="color: var(--success-color);">+ ₹${m.cashCollected.toLocaleString('en-IN')}</div>
         </div>
         <div class="recon-item">
-          <div class="recon-item-lbl">Field Travel & Food Expenses</div>
+          <div class="recon-item-lbl">Daily Expenses Spent</div>
           <div class="recon-item-val" style="color: var(--danger-color);">- ₹${m.totalExpenses.toLocaleString('en-IN')}</div>
         </div>
         <div class="recon-item" style="background: var(--purple-tint); border-color: var(--purple-border);">
-          <div class="recon-item-lbl" style="color: var(--purple-primary);">Net Cash In Field Hand</div>
+          <div class="recon-item-lbl" style="color: var(--purple-primary);">Remaining Cash in Hand</div>
           <div class="recon-item-val" style="color: var(--purple-dark);">₹${m.netCashInHand.toLocaleString('en-IN')}</div>
         </div>
       </div>

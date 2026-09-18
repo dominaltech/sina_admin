@@ -66,44 +66,75 @@
 
     if (!records || records.length === 0) {
       container.innerHTML = `
-        <div class="text-muted text-center" style="padding: 18px;">
+        <div class="card text-muted text-center" style="padding: 20px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
           No cash given recorded yet for this representative.
         </div>
       `;
       return;
     }
 
-    let html = `
-      <table class="admin-table" style="margin: 0;">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Cash Given Amount</th>
-            <th>Notes</th>
-            <th style="text-align: right;">Action</th>
-          </tr>
-        </thead>
-        <tbody>
+    // 1. Desktop Table
+    let tableHtml = `
+      <div class="cash-log-table-desktop table-responsive">
+        <table class="admin-table" style="margin: 0;">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Cash Given Amount</th>
+              <th>Notes / Route Purpose</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
+
+    // 2. Mobile Responsive Card List (Fits 100% on small screens without scroll)
+    let mobileCardsHtml = `<div class="cash-log-cards-mobile">`;
 
     records.forEach(r => {
       const d = new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-      html += `
+      const amtStr = '₹' + parseFloat(r.float_amount || 0).toLocaleString('en-IN');
+      const safeNotes = escapeHtml(r.notes || 'Morning cash for purchases');
+
+      tableHtml += `
         <tr>
           <td><strong>${d}</strong></td>
-          <td><span style="font-weight: 800; color: var(--purple-primary);">₹${parseFloat(r.float_amount || 0).toLocaleString('en-IN')}</span></td>
-          <td class="text-muted" style="font-size: 0.85rem;">${escapeHtml(r.notes || 'Daily field cash')}</td>
+          <td><span style="font-weight: 800; color: var(--purple-primary); font-size: 0.95rem;">${amtStr}</span></td>
+          <td class="text-muted" style="font-size: 0.85rem;">${safeNotes}</td>
           <td style="text-align: right;">
-            <button class="btn btn-outline-purple btn-sm" onclick="openEditFloatForDate('${r.date}', ${r.float_amount}, '${escapeHtml(r.notes || '')}')">
+            <button class="btn btn-outline-purple btn-sm" onclick="openEditFloatForDate('${r.date}', ${r.float_amount}, '${safeNotes}')">
               Edit
             </button>
           </td>
         </tr>
       `;
+
+      mobileCardsHtml += `
+        <div class="cash-log-mobile-item">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text-primary); font-size: 0.88rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>${d}</span>
+            </div>
+            <button class="btn btn-outline-purple btn-sm" onclick="openEditFloatForDate('${r.date}', ${r.float_amount}, '${safeNotes}')" style="padding: 4px 10px; font-size: 0.78rem;">
+              Edit
+            </button>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; background: var(--bg-secondary); padding: 8px 10px; border-radius: var(--radius-sm); margin-bottom: 6px;">
+            <span class="text-muted" style="font-size: 0.78rem;">Cash Given:</span>
+            <span style="font-size: 1.1rem; font-weight: 800; color: var(--purple-primary);">${amtStr}</span>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary);">
+            <span class="text-muted">Notes:</span> ${safeNotes}
+          </div>
+        </div>
+      `;
     });
 
-    html += `</tbody></table>`;
-    container.innerHTML = html;
+    tableHtml += `</tbody></table></div>`;
+    mobileCardsHtml += `</div>`;
+
+    container.innerHTML = tableHtml + mobileCardsHtml;
   }
 
   window.openEditFloatForDate = function(dateStr, amount, notes) {

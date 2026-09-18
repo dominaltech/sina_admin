@@ -24,14 +24,19 @@
       </button>
     </div>
 
-    <!-- Representatives Table -->
-    <div class="table-responsive">
+    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      <span>Tip: Click on any representative row or card to open their live activity page</span>
+    </div>
+
+    <!-- Desktop / Tablet Representatives Table -->
+    <div class="table-responsive reps-table-wrapper" style="width: 100%; max-width: 100%; min-width: 0;">
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Representative</th>
+            <th>Representative (Click to Open)</th>
             <th>Phone / Login ID</th>
-            <th>Assigned Route / Mandi</th>
+            <th>Assigned Route</th>
             <th>Today's Cash Given</th>
             <th>Status</th>
             <th>Password</th>
@@ -44,6 +49,11 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Mobile Representatives Card View (Clean boxes for each person) -->
+    <div id="reps-mobile-cards" class="reps-cards-grid">
+      <div class="text-center text-muted" style="padding: 20px;">Loading representatives...</div>
     </div>
   </main>
 
@@ -113,7 +123,7 @@
         <button class="icon-btn" id="btn-close-rep-float-modal">&times;</button>
       </div>
       <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 16px;">
-        Hand over or adjust field procurement cash for: <strong id="rep_float_name_display" class="text-purple"></strong>
+        Give or adjust morning cash for: <strong id="rep_float_name_display" class="text-purple"></strong>
       </p>
       <form id="rep-float-form">
         <input type="hidden" id="float_rep_id">
@@ -127,7 +137,7 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="rep_float_notes_input">Notes / Details</label>
-          <input type="text" id="rep_float_notes_input" class="form-input" placeholder="e.g. Morning APMC procurement cash">
+          <input type="text" id="rep_float_notes_input" class="form-input" placeholder="e.g. Morning cash handover">
         </div>
         <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">
           Save & Give Cash

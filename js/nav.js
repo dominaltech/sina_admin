@@ -104,7 +104,7 @@
     `;
 
     window.triggerSystemReset = async function() {
-      if (confirm('Are you sure you want to reset all field data?\n\nThis will wipe all orders, reset field expenses to ₹0, restore fresh morning cash floats, and reset representative passwords back to default (rep123).')) {
+      if (confirm('Are you sure you want to reset all field data?\n\nThis will wipe all orders, reset field expenses to ₹0, restore fresh morning cash given, and reset representative passwords back to default (rep123).')) {
         await window.sinaAdminDB.resetAllData();
         alert('All field operations data has been reset to starting fresh state.');
         window.location.reload();

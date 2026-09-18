@@ -303,3 +303,94 @@
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
+/* REPRESENTATIVE MANAGEMENT RESPONSIVE VIEWS */
+.rep-table-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.rep-table-row:hover td {
+  background-color: var(--purple-tint) !important;
+}
+
+.rep-person-card {
+  cursor: pointer;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.rep-person-card:hover {
+  border-color: var(--purple-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.rep-person-card:active {
+  background-color: var(--purple-tint);
+  transform: scale(0.99);
+}
+
+/* Representatives Toggle: Table on Desktop, Cards on Mobile */
+.reps-table-wrapper {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.reps-cards-grid {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .reps-table-wrapper {
+    display: none !important;
+  }
+  .reps-cards-grid {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* DAILY CASH GIVEN LOG RESPONSIVE STYLING (rep-detail.html) */
+.cash-log-table-desktop {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.cash-log-cards-mobile {
+  display: none;
+}
+
+.cash-log-mobile-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .cash-log-table-desktop {
+    display: none !important;
+  }
+  .cash-log-cards-mobile {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+  }
+}

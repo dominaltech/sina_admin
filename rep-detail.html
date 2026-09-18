@@ -61,26 +61,26 @@
         <div class="kpi-sub">Field cash received</div>
       </div>
       <div class="admin-kpi-card kpi-danger">
-        <div class="kpi-label">Expenses Logged</div>
+        <div class="kpi-label">Daily Expenses</div>
         <div class="kpi-number" style="color: var(--danger-color);" id="rep-metric-expenses">- ₹0</div>
         <div class="kpi-sub">Travel & food</div>
       </div>
       <div class="admin-kpi-card kpi-warning">
-        <div class="kpi-label">Net Cash in Hand</div>
+        <div class="kpi-label">Remaining Cash in Hand</div>
         <div class="kpi-number" style="color: var(--purple-dark);" id="rep-metric-net-cash">₹0</div>
-        <div class="kpi-sub">Cash Given + Cash - Exp</div>
+        <div class="kpi-sub">Cash Given + Cash - Expenses</div>
       </div>
     </div>
 
     <!-- Daily Cash Given Log -->
-    <div style="margin-top: 24px;">
-      <div class="page-header-row">
+    <div style="margin-top: 24px; width: 100%; max-width: 100%;">
+      <div class="page-header-row" style="margin-bottom: 10px;">
         <div>
           <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--purple-primary);">Daily Cash Given Log</h3>
           <p class="text-muted" style="font-size: 0.85rem;">Date-by-date record of cash given to this representative</p>
         </div>
       </div>
-      <div id="rep-cash-history-list" class="card table-responsive" style="padding: 0; overflow-x: auto; width: 100%; max-width: 100%; min-width: 0;">
+      <div id="rep-cash-history-list" style="width: 100%; max-width: 100%; min-width: 0;">
         <div class="text-muted text-center" style="padding: 16px;">Loading cash given history...</div>
       </div>
     </div>
@@ -121,7 +121,7 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="float_notes_input">Notes / Route Purpose</label>
-          <input type="text" id="float_notes_input" class="form-input" placeholder="e.g. Morning procurement cash">
+          <input type="text" id="float_notes_input" class="form-input" placeholder="e.g. Morning cash for purchases">
         </div>
         <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">
           Save & Give Cash

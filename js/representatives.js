@@ -26,30 +26,41 @@
 
   function renderRepsTable() {
     const tbody = document.getElementById('reps-table-tbody');
-    if (!tbody) return;
+    const mobileContainer = document.getElementById('reps-mobile-cards');
 
     if (reps.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted" style="padding: 24px;">No representatives registered.</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted" style="padding: 24px;">No representatives registered.</td></tr>`;
+      if (mobileContainer) mobileContainer.innerHTML = `<div class="text-center text-muted" style="padding: 24px;">No representatives registered.</div>`;
       return;
     }
 
     const today = new Date().toISOString().split('T')[0];
-    let html = '';
+    let tableHtml = '';
+    let mobileCardsHtml = '';
+
     reps.forEach(rep => {
       const repFloat = allFloats.find(f => String(f.representative_id) === String(rep.id) && f.date === today) ||
                        allFloats.find(f => String(f.representative_id) === String(rep.id));
       const floatAmt = repFloat ? parseFloat(repFloat.float_amount) || 0 : (rep.id === '22222222-2222-2222-2222-222222222222' ? 15000 : 0);
 
-      html += `
-        <tr>
+      // Desktop Table Row (Whole row is clickable to open rep page)
+      tableHtml += `
+        <tr class="rep-table-row" onclick="handleRepRowClick(event, '${rep.id}')" style="cursor: pointer;" title="Click row to open ${escapeHtml(rep.name)}'s live page">
           <td>
-            <div style="font-weight: 700;">${escapeHtml(rep.name)}</div>
-            <div class="text-muted" style="font-size: 0.8rem;">ID: ${rep.id.substring(0, 8)}...</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 34px; height: 34px; border-radius: 50%; background: var(--purple-tint); color: var(--purple-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div>
+                <div style="font-weight: 700; color: var(--purple-primary); font-size: 0.95rem;">${escapeHtml(rep.name)}</div>
+                <div class="text-muted" style="font-size: 0.75rem;">Click to open live page &rarr;</div>
+              </div>
+            </div>
           </td>
           <td>
             <a href="tel:${rep.phone}" class="text-purple font-bold">${escapeHtml(rep.phone)}</a>
           </td>
-          <td>${escapeHtml(rep.assigned_route || 'Unassigned')}</td>
+          <td>${escapeHtml(rep.assigned_route || 'All Routes')}</td>
           <td>
             <button class="btn btn-outline-purple btn-sm" onclick="openRepFloatModal('${rep.id}', '${escapeHtml(rep.name)}', ${floatAmt})">
               ₹${floatAmt.toLocaleString('en-IN')} (Edit)
@@ -68,7 +79,7 @@
           <td>
             <div style="display: flex; gap: 6px;">
               <a href="rep-detail.html?id=${rep.id}" class="btn btn-primary btn-sm">
-                Live Activity
+                Open Page &rarr;
               </a>
               <button class="btn btn-secondary btn-sm" onclick="toggleStatus('${rep.id}', '${rep.status}')">
                 ${rep.status === 'active' ? 'Deactivate' : 'Activate'}
@@ -77,10 +88,67 @@
           </td>
         </tr>
       `;
+
+      // Mobile Representative Box / Card (100% clickable box)
+      mobileCardsHtml += `
+        <div class="rep-person-card" onclick="handleRepRowClick(event, '${rep.id}')" style="cursor: pointer; background: var(--bg-primary); border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow-sm); transition: all 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--purple-tint); color: var(--purple-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div>
+                <div style="font-weight: 800; font-size: 1rem; color: var(--purple-primary);">${escapeHtml(rep.name)}</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(rep.assigned_route || 'All Routes')}</div>
+              </div>
+            </div>
+            <span class="status-badge ${rep.status === 'active' ? 'active' : 'inactive'}">
+              ${rep.status.toUpperCase()}
+            </span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; background: var(--bg-secondary); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 0.8rem;">
+            <div>
+              <span class="text-muted" style="font-size: 0.72rem; display: block;">Phone / Login:</span>
+              <a href="tel:${rep.phone}" class="text-purple font-bold">${escapeHtml(rep.phone)}</a>
+            </div>
+            <div>
+              <span class="text-muted" style="font-size: 0.72rem; display: block;">Today's Cash Given:</span>
+              <strong style="color: var(--purple-primary);">₹${floatAmt.toLocaleString('en-IN')}</strong>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.72rem;">
+            <span class="text-muted">Click anywhere on card to open</span>
+            <span style="color: var(--purple-primary); font-weight: 700;">Live Activity &rarr;</span>
+          </div>
+
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
+            <button type="button" class="btn btn-outline-purple btn-sm" onclick="openRepFloatModal('${rep.id}', '${escapeHtml(rep.name)}', ${floatAmt})" style="padding: 6px 10px; font-size: 0.78rem;">
+              Give Cash
+            </button>
+            <button type="button" class="btn btn-outline-purple btn-sm" onclick="openPasswordModal('${rep.id}', '${escapeHtml(rep.name)}', '${escapeHtml(rep.password_hash)}') "style="padding: 6px 10px; font-size: 0.78rem;">
+              Password
+            </button>
+            <a href="rep-detail.html?id=${rep.id}" class="btn btn-primary btn-sm" style="padding: 6px 12px; font-size: 0.78rem;">
+              Open Person Page &rarr;
+            </a>
+          </div>
+        </div>
+      `;
     });
 
-    tbody.innerHTML = html;
+    if (tbody) tbody.innerHTML = tableHtml;
+    if (mobileContainer) mobileContainer.innerHTML = mobileCardsHtml;
   }
+
+  window.handleRepRowClick = function(event, repId) {
+    // If the click originated from an action button or link, don't hijack navigation
+    if (event.target.closest('button') || event.target.closest('a') || event.target.closest('input')) {
+      return;
+    }
+    window.location.href = `rep-detail.html?id=${repId}`;
+  };
 
   function setupAddRepModal() {
     const openBtn = document.getElementById('btn-open-add-rep');
@@ -193,7 +261,7 @@
     document.getElementById('rep_float_name_display').textContent = repName;
     document.getElementById('rep_float_date_input').value = floatDate || new Date().toISOString().split('T')[0];
     document.getElementById('rep_float_amount_input').value = currentFloat || 0;
-    document.getElementById('rep_float_notes_input').value = 'Daily field procurement cash';
+    document.getElementById('rep_float_notes_input').value = 'Morning cash handover';
     modal.classList.add('active');
   };
 
