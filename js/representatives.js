@@ -9,14 +9,18 @@
     await loadRepresentatives();
     setupAddRepModal();
     setupPasswordModal();
+    setupRepFloatModal();
   });
 
   window.refreshAdminData = async function() {
     await loadRepresentatives();
   };
 
+  let allFloats = [];
+
   async function loadRepresentatives() {
     reps = await window.sinaAdminDB.getRepresentatives();
+    allFloats = await window.sinaAdminDB.getDailyFloats();
     renderRepsTable();
   }
 
@@ -25,12 +29,17 @@
     if (!tbody) return;
 
     if (reps.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted" style="padding: 24px;">No representatives registered.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted" style="padding: 24px;">No representatives registered.</td></tr>`;
       return;
     }
 
+    const today = new Date().toISOString().split('T')[0];
     let html = '';
     reps.forEach(rep => {
+      const repFloat = allFloats.find(f => String(f.representative_id) === String(rep.id) && f.date === today) ||
+                       allFloats.find(f => String(f.representative_id) === String(rep.id));
+      const floatAmt = repFloat ? parseFloat(repFloat.float_amount) || 0 : (rep.id === '22222222-2222-2222-2222-222222222222' ? 15000 : 0);
+
       html += `
         <tr>
           <td>
@@ -41,6 +50,11 @@
             <a href="tel:${rep.phone}" class="text-purple font-bold">${escapeHtml(rep.phone)}</a>
           </td>
           <td>${escapeHtml(rep.assigned_route || 'Unassigned')}</td>
+          <td>
+            <button class="btn btn-outline-purple btn-sm" onclick="openRepFloatModal('${rep.id}', '${escapeHtml(rep.name)}', ${floatAmt})">
+              ₹${floatAmt.toLocaleString('en-IN')} (Edit)
+            </button>
+          </td>
           <td>
             <span class="status-badge ${rep.status === 'active' ? 'active' : 'inactive'}">
               ${rep.status.toUpperCase()}
@@ -141,6 +155,45 @@
       });
     }
   }
+
+  function setupRepFloatModal() {
+    const modal = document.getElementById('rep-float-modal');
+    const closeBtn = document.getElementById('btn-close-rep-float-modal');
+    const form = document.getElementById('rep-float-form');
+
+    if (closeBtn && modal) {
+      closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+    }
+
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const repId = document.getElementById('float_rep_id')?.value;
+        const amount = parseFloat(document.getElementById('rep_float_amount_input')?.value) || 0;
+        const notes = document.getElementById('rep_float_notes_input')?.value.trim();
+
+        try {
+          await window.sinaAdminDB.issueDailyFloat(repId, amount, notes);
+          alert('Cash float updated successfully and synced to representative!');
+          modal.classList.remove('active');
+          await loadRepresentatives();
+        } catch (err) {
+          alert('Error updating float: ' + err.message);
+        }
+      });
+    }
+  }
+
+  window.openRepFloatModal = function(repId, repName, currentFloat) {
+    const modal = document.getElementById('rep-float-modal');
+    if (!modal) return;
+
+    document.getElementById('float_rep_id').value = repId;
+    document.getElementById('rep_float_name_display').textContent = repName;
+    document.getElementById('rep_float_amount_input').value = currentFloat || 0;
+    document.getElementById('rep_float_notes_input').value = 'Daily field procurement float';
+    modal.classList.add('active');
+  };
 
   window.openPasswordModal = function(repId, repName, currentPass) {
     const modal = document.getElementById('edit-password-modal');

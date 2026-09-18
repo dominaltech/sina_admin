@@ -28,6 +28,21 @@
 
     handleIncomingBroadcast(data) {
       if (!data) return;
+
+      if (data.type === 'PRODUCT_ADDED' && data.payload) {
+        const products = JSON.parse(localStorage.getItem('sina_products') || '[]');
+        if (!products.some(p => p.id === data.payload.id || (p.name.toLowerCase() === data.payload.name.toLowerCase() && p.type === data.payload.type))) {
+          products.push(data.payload);
+          localStorage.setItem('sina_products', JSON.stringify(products));
+        }
+      } else if (data.type === 'CATEGORY_ADDED' && data.payload) {
+        const categories = JSON.parse(localStorage.getItem('sina_categories') || '[]');
+        if (!categories.some(c => c.id === data.payload.id || c.name.toLowerCase() === data.payload.name.toLowerCase())) {
+          categories.push(data.payload);
+          localStorage.setItem('sina_categories', JSON.stringify(categories));
+        }
+      }
+
       // Add to notifications log
       const notifications = JSON.parse(localStorage.getItem('sina_admin_notifications') || '[]');
       const notif = {
@@ -44,6 +59,15 @@
       this.activityListeners.forEach(listener => {
         try { listener(notif); } catch (e) { console.error(e); }
       });
+    }
+
+    broadcast(type, payload) {
+      if (this.channel) {
+        try {
+          this.channel.postMessage({ type, payload, timestamp: Date.now() });
+        } catch (e) {}
+      }
+      localStorage.setItem('sina_last_event', JSON.stringify({ type, payload, timestamp: Date.now() }));
     }
 
     onNewActivity(callback) {
@@ -167,18 +191,38 @@
 
     // 2. CATEGORIES & PRODUCTS MASTER
     async getCategories() {
+      const remote = await this.supabaseRequest('categories?select=*&order=name.asc');
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        localStorage.setItem('sina_categories', JSON.stringify(remote));
+        return remote;
+      }
       return JSON.parse(localStorage.getItem('sina_categories') || '[]');
     }
 
     async addCategory(name) {
       const categories = await this.getCategories();
+      const existing = categories.find(c => c.name.toLowerCase() === name.trim().toLowerCase());
+      if (existing) return existing;
+
       const newCat = { id: 'c_' + Date.now(), name: name.trim() };
       categories.push(newCat);
       localStorage.setItem('sina_categories', JSON.stringify(categories));
+
+      this.supabaseRequest('categories', {
+        method: 'POST',
+        body: JSON.stringify({ name: newCat.name })
+      });
+
+      this.broadcast('CATEGORY_ADDED', newCat);
       return newCat;
     }
 
     async getProducts() {
+      const remote = await this.supabaseRequest('products?select=*&is_active=eq.true&order=name.asc');
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        localStorage.setItem('sina_products', JSON.stringify(remote));
+        return remote;
+      }
       return JSON.parse(localStorage.getItem('sina_products') || '[]');
     }
 
@@ -186,7 +230,7 @@
       const products = await this.getProducts();
       const newProd = {
         id: 'p_' + Date.now(),
-        category_id: product.category_id,
+        category_id: product.category_id || 'c1',
         name: product.name.trim(),
         type: product.type ? product.type.trim() : 'Standard',
         default_unit: product.default_unit || 'per_kg',
@@ -194,6 +238,19 @@
       };
       products.push(newProd);
       localStorage.setItem('sina_products', JSON.stringify(products));
+
+      this.supabaseRequest('products', {
+        method: 'POST',
+        body: JSON.stringify({
+          category_id: newProd.category_id,
+          name: newProd.name,
+          type: newProd.type,
+          default_unit: newProd.default_unit,
+          default_rate: newProd.default_rate
+        })
+      });
+
+      this.broadcast('PRODUCT_ADDED', newProd);
       return newProd;
     }
 
@@ -201,6 +258,12 @@
       let products = await this.getProducts();
       products = products.filter(p => p.id !== id);
       localStorage.setItem('sina_products', JSON.stringify(products));
+
+      this.supabaseRequest(`products?id=eq.${id}`, {
+        method: 'DELETE'
+      });
+
+      this.broadcast('PRODUCT_DELETED', { id });
     }
 
     // 3. PROCUREMENT ENTRIES & APPROVALS
@@ -230,21 +293,46 @@
     async issueDailyFloat(repId, amount, notes) {
       const floats = await this.getDailyFloats();
       const today = new Date().toISOString().split('T')[0];
-      const existing = floats.find(f => f.representative_id === repId && f.date === today);
+      const parsedAmount = parseFloat(amount) || 0;
+      const existingIndex = floats.findIndex(f => f.representative_id === repId && f.date === today);
 
-      if (existing) {
-        existing.float_amount = parseFloat(amount);
-        existing.notes = notes;
+      const floatRecord = {
+        id: existingIndex !== -1 ? floats[existingIndex].id : 'df_' + Date.now(),
+        representative_id: repId,
+        date: today,
+        float_amount: parsedAmount,
+        notes: notes || 'Field operations cash float'
+      };
+
+      if (existingIndex !== -1) {
+        floats[existingIndex] = floatRecord;
       } else {
-        floats.push({
-          id: 'df_' + Date.now(),
-          representative_id: repId,
-          date: today,
-          float_amount: parseFloat(amount),
-          notes
-        });
+        floats.push(floatRecord);
       }
       localStorage.setItem('sina_floats', JSON.stringify(floats));
+
+      // Attempt Supabase upsert
+      this.supabaseRequest('daily_floats', {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({
+          representative_id: repId,
+          float_amount: parsedAmount,
+          notes: notes || '',
+          date: today
+        })
+      });
+
+      // Broadcast FLOAT_UPDATED in real time to SINA App
+      const payload = { representative_id: repId, float_amount: parsedAmount, date: today, notes };
+      if (this.channel) {
+        try {
+          this.channel.postMessage({ type: 'FLOAT_UPDATED', payload, timestamp: Date.now() });
+        } catch (e) {}
+      }
+      localStorage.setItem('sina_last_event', JSON.stringify({ type: 'FLOAT_UPDATED', payload, timestamp: Date.now() }));
+
+      return floatRecord;
     }
 
     async getExpenses(repId = null) {

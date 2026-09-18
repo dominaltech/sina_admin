@@ -179,6 +179,12 @@
     } else if (notif.type === 'NEW_EXPENSE') {
       title = `Expense Logged: ₹${notif.payload.amount}`;
       body = `${notif.payload.rep_name || 'Rep'}: ${notif.payload.category.toUpperCase()} - ${notif.payload.notes || ''}`;
+    } else if (notif.type === 'PRODUCT_ADDED') {
+      title = `New Product Added: ${notif.payload.name}`;
+      body = `${notif.payload.type || 'Standard'} (₹${parseFloat(notif.payload.default_rate || 0).toLocaleString('en-IN')} / ${notif.payload.default_unit || 'unit'}) added by field rep`;
+    } else if (notif.type === 'CATEGORY_ADDED') {
+      title = `New Category Added: ${notif.payload.name}`;
+      body = `Category created by field rep`;
     }
 
     toast.innerHTML = `
