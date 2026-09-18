@@ -32,7 +32,7 @@
             <th>Representative</th>
             <th>Phone / Login ID</th>
             <th>Assigned Route / Mandi</th>
-            <th>Today's Cash Float</th>
+            <th>Today's Cash Given</th>
             <th>Status</th>
             <th>Password</th>
             <th>Actions</th>
@@ -105,20 +105,24 @@
     </div>
   </div>
 
-  <!-- ASSIGN / EDIT CASH FLOAT MODAL -->
+  <!-- GIVE / UPDATE CASH GIVEN MODAL -->
   <div id="rep-float-modal" class="sina-modal-backdrop">
     <div class="sina-modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--purple-primary);">Assign / Edit Cash Float</h3>
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--purple-primary);">Give Cash / Update Cash Given</h3>
         <button class="icon-btn" id="btn-close-rep-float-modal">&times;</button>
       </div>
       <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 16px;">
-        Update today's starting field procurement allowance for: <strong id="rep_float_name_display" class="text-purple"></strong>
+        Hand over or adjust field procurement cash for: <strong id="rep_float_name_display" class="text-purple"></strong>
       </p>
       <form id="rep-float-form">
         <input type="hidden" id="float_rep_id">
         <div class="form-group">
-          <label class="form-label" for="rep_float_amount_input">Today's Float Amount (₹) *</label>
+          <label class="form-label" for="rep_float_date_input">Date *</label>
+          <input type="date" id="rep_float_date_input" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rep_float_amount_input">Cash Given Amount (₹) *</label>
           <input type="number" id="rep_float_amount_input" class="form-input" placeholder="e.g. 15000" min="0" step="any" required>
         </div>
         <div class="form-group">
@@ -126,7 +130,7 @@
           <input type="text" id="rep_float_notes_input" class="form-input" placeholder="e.g. Morning APMC procurement cash">
         </div>
         <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">
-          Update Cash Float
+          Save & Give Cash
         </button>
       </form>
     </div>

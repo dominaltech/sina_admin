@@ -33,7 +33,7 @@
       <div>
         <button type="button" id="btn-issue-float" class="btn btn-primary btn-sm">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
-          Issue / Adjust Float
+          Give Cash / Adjust Cash
         </button>
       </div>
     </div>
@@ -46,14 +46,14 @@
         <div class="kpi-sub">Visits completed today</div>
       </div>
       <div class="admin-kpi-card">
-        <div class="kpi-label">Procurement Total</div>
+        <div class="kpi-label">Goods Bought Total</div>
         <div class="kpi-number" id="rep-metric-procured">₹0</div>
         <div class="kpi-sub">Orders value today</div>
       </div>
       <div class="admin-kpi-card">
-        <div class="kpi-label">Starting Float</div>
+        <div class="kpi-label">Morning Cash Given</div>
         <div class="kpi-number" id="rep-metric-float">₹0</div>
-        <div class="kpi-sub">Morning cash issued</div>
+        <div class="kpi-sub">Cash given today</div>
       </div>
       <div class="admin-kpi-card kpi-success">
         <div class="kpi-label">Cash Collected</div>
@@ -63,12 +63,25 @@
       <div class="admin-kpi-card kpi-danger">
         <div class="kpi-label">Expenses Logged</div>
         <div class="kpi-number" style="color: var(--danger-color);" id="rep-metric-expenses">- ₹0</div>
-        <div class="kpi-sub">Travel & fuel</div>
+        <div class="kpi-sub">Travel & food</div>
       </div>
       <div class="admin-kpi-card kpi-warning">
         <div class="kpi-label">Net Cash in Hand</div>
         <div class="kpi-number" style="color: var(--purple-dark);" id="rep-metric-net-cash">₹0</div>
-        <div class="kpi-sub">Float + Cash - Expenses</div>
+        <div class="kpi-sub">Cash Given + Cash - Exp</div>
+      </div>
+    </div>
+
+    <!-- Daily Cash Given Log -->
+    <div style="margin-top: 24px;">
+      <div class="page-header-row">
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--purple-primary);">Daily Cash Given Log</h3>
+          <p class="text-muted" style="font-size: 0.85rem;">Date-by-date record of cash given to this representative</p>
+        </div>
+      </div>
+      <div id="rep-cash-history-list" class="card" style="padding: 0; overflow: hidden;">
+        <div class="text-muted text-center" style="padding: 16px;">Loading cash given history...</div>
       </div>
     </div>
 
@@ -77,7 +90,7 @@
       <div class="page-header-row">
         <div>
           <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--purple-primary);">Live Route & Field Timeline</h3>
-          <p class="text-muted" style="font-size: 0.85rem;">Real-time feed showing what this representative is doing today</p>
+          <p class="text-muted" style="font-size: 0.85rem;">Real-time feed showing what this representative is doing</p>
         </div>
         <span class="status-badge active">Auto-Sync Live</span>
       </div>
@@ -88,26 +101,30 @@
     </div>
   </main>
 
-  <!-- ISSUE / ADJUST FLOAT MODAL -->
+  <!-- GIVE / ADJUST CASH MODAL -->
   <div id="issue-float-modal" class="sina-modal-backdrop">
     <div class="sina-modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--purple-primary);">Issue Daily Cash Float</h3>
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--purple-primary);">Give Cash / Update Cash Given</h3>
         <button class="icon-btn" id="btn-close-float-modal">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
       <form id="issue-float-form">
         <div class="form-group">
-          <label class="form-label" for="float_amount_input">Float Amount (₹) *</label>
-          <input type="number" id="float_amount_input" class="form-input" placeholder="e.g. 15000" min="100" step="any" required>
+          <label class="form-label" for="float_date_input">Date *</label>
+          <input type="date" id="float_date_input" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="float_amount_input">Cash Given Amount (₹) *</label>
+          <input type="number" id="float_amount_input" class="form-input" placeholder="e.g. 15000" min="0" step="any" required>
         </div>
         <div class="form-group">
           <label class="form-label" for="float_notes_input">Notes / Route Purpose</label>
-          <input type="text" id="float_notes_input" class="form-input" placeholder="e.g. Morning procurement cash allowance">
+          <input type="text" id="float_notes_input" class="form-input" placeholder="e.g. Morning procurement cash">
         </div>
         <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">
-          Assign Cash Float
+          Save & Give Cash
         </button>
       </form>
     </div>

@@ -169,29 +169,31 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const repId = document.getElementById('float_rep_id')?.value;
+        const date = document.getElementById('rep_float_date_input')?.value || new Date().toISOString().split('T')[0];
         const amount = parseFloat(document.getElementById('rep_float_amount_input')?.value) || 0;
         const notes = document.getElementById('rep_float_notes_input')?.value.trim();
 
         try {
-          await window.sinaAdminDB.issueDailyFloat(repId, amount, notes);
-          alert('Cash float updated successfully and synced to representative!');
+          await window.sinaAdminDB.issueDailyFloat(repId, amount, notes, date);
+          alert('Cash given updated successfully and synced to representative!');
           modal.classList.remove('active');
           await loadRepresentatives();
         } catch (err) {
-          alert('Error updating float: ' + err.message);
+          alert('Error updating cash: ' + err.message);
         }
       });
     }
   }
 
-  window.openRepFloatModal = function(repId, repName, currentFloat) {
+  window.openRepFloatModal = function(repId, repName, currentFloat, floatDate = null) {
     const modal = document.getElementById('rep-float-modal');
     if (!modal) return;
 
     document.getElementById('float_rep_id').value = repId;
     document.getElementById('rep_float_name_display').textContent = repName;
+    document.getElementById('rep_float_date_input').value = floatDate || new Date().toISOString().split('T')[0];
     document.getElementById('rep_float_amount_input').value = currentFloat || 0;
-    document.getElementById('rep_float_notes_input').value = 'Daily field procurement float';
+    document.getElementById('rep_float_notes_input').value = 'Daily field procurement cash';
     modal.classList.add('active');
   };
 

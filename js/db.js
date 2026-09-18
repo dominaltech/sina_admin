@@ -361,41 +361,43 @@
       return JSON.parse(localStorage.getItem('sina_floats') || '[]');
     }
 
-    async issueDailyFloat(repId, amount, notes) {
-      const floats = await this.getDailyFloats();
-      const today = new Date().toISOString().split('T')[0];
+    async issueDailyFloat(repId, amount, notes, date = null) {
+      const targetDate = date ? String(date).trim() : new Date().toISOString().split('T')[0];
       const parsedAmount = parseFloat(amount) || 0;
-      const existingIndex = floats.findIndex(f => f.representative_id === repId && f.date === today);
 
-      const floatRecord = {
-        id: existingIndex !== -1 ? floats[existingIndex].id : 'df_' + Date.now(),
-        representative_id: repId,
-        date: today,
-        float_amount: parsedAmount,
-        notes: notes || 'Field operations cash float'
-      };
-
-      if (existingIndex !== -1) {
-        floats[existingIndex] = floatRecord;
-      } else {
-        floats.push(floatRecord);
-      }
-      localStorage.setItem('sina_floats', JSON.stringify(floats));
-
-      // Attempt Supabase upsert
-      await this.supabaseRequest('daily_floats', {
+      // Attempt Supabase upsert with explicit on_conflict param
+      const remote = await this.supabaseRequest('daily_floats?on_conflict=representative_id,date', {
         method: 'POST',
-        headers: { 'Prefer': 'resolution=merge-duplicates' },
+        headers: {
+          'Prefer': 'resolution=merge-duplicates,return=representation'
+        },
         body: JSON.stringify({
           representative_id: repId,
           float_amount: parsedAmount,
-          notes: notes || '',
-          date: today
+          notes: notes || 'Daily cash given for field operations',
+          date: targetDate
         })
       });
 
+      const floatRecord = (remote && Array.isArray(remote) && remote[0]) ? remote[0] : {
+        id: 'df_' + Date.now(),
+        representative_id: repId,
+        date: targetDate,
+        float_amount: parsedAmount,
+        notes: notes || 'Daily cash given for field operations'
+      };
+
+      const floats = await this.getDailyFloats();
+      const existingIndex = floats.findIndex(f => f.representative_id === repId && f.date === targetDate);
+      if (existingIndex !== -1) {
+        floats[existingIndex] = floatRecord;
+      } else {
+        floats.unshift(floatRecord);
+      }
+      localStorage.setItem('sina_floats', JSON.stringify(floats));
+
       // Broadcast FLOAT_UPDATED in real time to SINA App
-      const payload = { representative_id: repId, float_amount: parsedAmount, date: today, notes };
+      const payload = { representative_id: repId, float_amount: parsedAmount, date: targetDate, notes };
       if (this.channel) {
         try {
           this.channel.postMessage({ type: 'FLOAT_UPDATED', payload, timestamp: Date.now() });
@@ -404,6 +406,15 @@
       localStorage.setItem('sina_last_event', JSON.stringify({ type: 'FLOAT_UPDATED', payload, timestamp: Date.now() }));
 
       return floatRecord;
+    }
+
+    async getDailyFloatsByRep(repId) {
+      const remote = await this.supabaseRequest(`daily_floats?representative_id=eq.${repId}&order=date.desc`);
+      if (remote && Array.isArray(remote)) {
+        return remote;
+      }
+      const floats = JSON.parse(localStorage.getItem('sina_floats') || '[]');
+      return floats.filter(f => f.representative_id === repId).sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
     async getExpenses(repId = null) {
