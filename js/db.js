@@ -132,49 +132,95 @@
       }
     }
 
+    normalizeEntry(row) {
+      const firstItem = (row.procurement_items && row.procurement_items.length > 0) ? row.procurement_items[0] : null;
+      const images = (row.payment_attachments && Array.isArray(row.payment_attachments))
+        ? row.payment_attachments.map(att => att.file_url)
+        : (Array.isArray(row.images) ? row.images : []);
+
+      const repName = row.profiles?.name || row.rep_name || 'Rahul Sharma';
+
+      return {
+        id: row.id,
+        representative_id: row.representative_id,
+        rep_name: repName,
+        firm_id: row.firm_id,
+        firm_name: row.firm_name,
+        contact_person: row.contact_person,
+        mobile: row.mobile,
+        address: row.address,
+        category_name: firstItem ? firstItem.category_name : (row.category_name || ''),
+        type: firstItem ? (firstItem.product_name || firstItem.type) : (row.type || ''),
+        quantity: firstItem ? parseFloat(firstItem.quantity) : (parseFloat(row.quantity) || 0),
+        unit: firstItem ? firstItem.unit : (row.unit || 'per_kg'),
+        rate: firstItem ? parseFloat(firstItem.rate) : (parseFloat(row.rate) || 0),
+        total_amount: parseFloat(row.total_amount) || 0,
+        payment_mode: row.payment_mode,
+        cash_amount: parseFloat(row.cash_amount) || 0,
+        upi_id: row.upi_id || '',
+        upi_utr: row.upi_utr || '',
+        images: images,
+        status: row.status,
+        created_at: row.created_at,
+        items: row.procurement_items || []
+      };
+    }
+
     // 1. REPRESENTATIVES & PASSWORD MANAGEMENT
     async getRepresentatives() {
+      const remote = await this.supabaseRequest('profiles?role=eq.representative&order=created_at.asc');
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        localStorage.setItem('sina_profiles', JSON.stringify(remote));
+        return remote;
+      }
       const profiles = JSON.parse(localStorage.getItem('sina_profiles') || '[]');
       return profiles.filter(p => p.role === 'representative');
     }
 
     async getRepresentativeById(id) {
+      const remote = await this.supabaseRequest(`profiles?id=eq.${id}&select=*`);
+      if (remote && Array.isArray(remote) && remote.length > 0) {
+        return remote[0];
+      }
       const reps = await this.getRepresentatives();
       return reps.find(r => r.id === id);
     }
 
     async addRepresentative(data) {
-      const profiles = JSON.parse(localStorage.getItem('sina_profiles') || '[]');
-      const newRep = {
-        id: 'rep_' + Date.now(),
+      const payload = {
         name: data.name.trim(),
         phone: data.phone.trim(),
         password_hash: data.password.trim(),
         role: 'representative',
         assigned_route: data.assigned_route ? data.assigned_route.trim() : 'General Territory',
-        status: 'active',
+        status: 'active'
+      };
+
+      const remote = await this.supabaseRequest('profiles', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      const newRep = (remote && Array.isArray(remote) && remote[0]) ? remote[0] : {
+        id: 'rep_' + Date.now(),
+        ...payload,
         created_at: new Date().toISOString()
       };
+
+      const profiles = JSON.parse(localStorage.getItem('sina_profiles') || '[]');
       profiles.push(newRep);
       localStorage.setItem('sina_profiles', JSON.stringify(profiles));
-
-      // Attempt Supabase insert
-      this.supabaseRequest('profiles', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: newRep.name,
-          phone: newRep.phone,
-          password_hash: newRep.password_hash,
-          role: 'representative',
-          assigned_route: newRep.assigned_route,
-          status: newRep.status
-        })
-      });
 
       return newRep;
     }
 
     async updateRepresentative(id, updateData) {
+      // Supabase update
+      await this.supabaseRequest(`profiles?id=eq.${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ ...updateData, updated_at: new Date().toISOString() })
+      });
+
       const profiles = JSON.parse(localStorage.getItem('sina_profiles') || '[]');
       const index = profiles.findIndex(p => p.id === id);
       if (index !== -1) {
@@ -182,11 +228,12 @@
         localStorage.setItem('sina_profiles', JSON.stringify(profiles));
         return profiles[index];
       }
-      throw new Error('Representative not found.');
+      return updateData;
     }
 
     async updateRepresentativePassword(id, newPassword) {
-      return this.updateRepresentative(id, { password_hash: newPassword.trim() });
+      const trimmed = newPassword.trim();
+      return this.updateRepresentative(id, { password_hash: trimmed });
     }
 
     // 2. CATEGORIES & PRODUCTS MASTER
@@ -268,6 +315,16 @@
 
     // 3. PROCUREMENT ENTRIES & APPROVALS
     async getProcurementEntries(repId = null) {
+      let query = 'procurement_entries?select=*,procurement_items(*),payment_attachments(*),profiles(name,phone)&order=created_at.desc';
+      if (repId) {
+        query += `&representative_id=eq.${repId}`;
+      }
+      const remote = await this.supabaseRequest(query);
+      if (remote && Array.isArray(remote)) {
+        const normalized = remote.map(row => this.normalizeEntry(row));
+        localStorage.setItem('sina_entries', JSON.stringify(normalized));
+        return normalized;
+      }
       const entries = JSON.parse(localStorage.getItem('sina_entries') || '[]');
       if (repId) {
         return entries.filter(e => e.representative_id === repId);
@@ -276,17 +333,31 @@
     }
 
     async updateEntryStatus(entryId, newStatus) {
+      // Update local cache
       const entries = JSON.parse(localStorage.getItem('sina_entries') || '[]');
       const target = entries.find(e => e.id === entryId);
       if (target) {
         target.status = newStatus;
         localStorage.setItem('sina_entries', JSON.stringify(entries));
       }
+
+      // Update Supabase
+      await this.supabaseRequest(`procurement_entries?id=eq.${entryId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus, updated_at: new Date().toISOString() })
+      });
+
+      this.broadcast('ENTRY_STATUS_UPDATED', { entryId, status: newStatus });
       return target;
     }
 
     // 4. CASH FLOATS & EXPENSES
     async getDailyFloats() {
+      const remote = await this.supabaseRequest('daily_floats?select=*&order=date.desc');
+      if (remote && Array.isArray(remote)) {
+        localStorage.setItem('sina_floats', JSON.stringify(remote));
+        return remote;
+      }
       return JSON.parse(localStorage.getItem('sina_floats') || '[]');
     }
 
@@ -312,7 +383,7 @@
       localStorage.setItem('sina_floats', JSON.stringify(floats));
 
       // Attempt Supabase upsert
-      this.supabaseRequest('daily_floats', {
+      await this.supabaseRequest('daily_floats', {
         method: 'POST',
         headers: { 'Prefer': 'resolution=merge-duplicates' },
         body: JSON.stringify({
@@ -336,6 +407,13 @@
     }
 
     async getExpenses(repId = null) {
+      let query = 'expenses?select=*&order=created_at.desc';
+      if (repId) query += `&representative_id=eq.${repId}`;
+      const remote = await this.supabaseRequest(query);
+      if (remote && Array.isArray(remote)) {
+        localStorage.setItem('sina_expenses', JSON.stringify(remote));
+        return remote;
+      }
       const expenses = JSON.parse(localStorage.getItem('sina_expenses') || '[]');
       if (repId) return expenses.filter(e => e.representative_id === repId);
       return expenses;
@@ -371,7 +449,7 @@
       // Live net cash in field = Disbursed Float + Cash Collected - Expenses
       const netCashInHand = totalFloatDisbursed + cashCollected - totalExpenses;
 
-      const pendingApprovalsCount = todayEntries.filter(e => e.status === 'pending_approval' || (e.payment_mode !== 'cash' && e.status !== 'verified')).length;
+      const pendingApprovalsCount = todayEntries.filter(e => e.status === 'pending_approval' || e.status === 'pending' || (e.payment_mode !== 'cash' && e.status !== 'verified')).length;
 
       return {
         todayVisitsCount: todayEntries.length,
@@ -383,8 +461,8 @@
         totalExpenses,
         netCashInHand,
         pendingApprovalsCount,
-        recentEntries: todayEntries,
-        recentExpenses: todayExpenses
+        recentEntries: (allEntries && allEntries.length > 0) ? allEntries.slice(0, 50) : todayEntries,
+        recentExpenses: (allExpenses && allExpenses.length > 0) ? allExpenses.slice(0, 50) : todayExpenses
       };
     }
 

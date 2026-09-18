@@ -15,7 +15,7 @@
 
   async function loadApprovals() {
     const all = await window.sinaAdminDB.getProcurementEntries();
-    pendingEntries = all.filter(e => e.payment_mode !== 'cash' || e.status === 'pending_approval');
+    pendingEntries = all.filter(e => e.payment_mode !== 'cash' || e.status === 'pending' || e.status === 'pending_approval');
 
     renderApprovalsTable();
   }
