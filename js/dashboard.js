@@ -72,7 +72,7 @@
 
     let html = '<option value="">All Field Representatives (Consolidated)</option>';
     allReps.forEach(rep => {
-      html += `<option value="${rep.id}">Representative: ${escapeHtml(rep.name)} (${escapeHtml(rep.assigned_route || 'Route')})</option>`;
+      html += `<option value="${rep.id}">${escapeHtml(rep.name)} (${escapeHtml(rep.assigned_route || 'All Routes')})</option>`;
     });
     repSelect.innerHTML = html;
   }
