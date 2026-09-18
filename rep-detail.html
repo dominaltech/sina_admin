@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Live Representative Activity - SINA Admin</title>
+  <meta name="theme-color" content="#4C1D95">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <main class="admin-container">
+    <!-- Back link & Header -->
+    <div style="margin-bottom: 12px;">
+      <a href="representatives.html" class="text-purple font-bold" style="font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
+        &larr; Back to Representatives
+      </a>
+    </div>
+
+    <div class="page-header-row">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <h1 class="page-title" id="rep-detail-name">Rahul Sharma</h1>
+          <span id="rep-detail-status" class="status-badge active">Active in Field</span>
+        </div>
+        <p class="page-subtitle">
+          Phone: <strong id="rep-detail-phone">+91 9811223344</strong> &bull; Route: <strong id="rep-detail-route">North Wholesale Market</strong>
+        </p>
+      </div>
+      <div>
+        <button type="button" id="btn-issue-float" class="btn btn-primary btn-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+          Issue / Adjust Float
+        </button>
+      </div>
+    </div>
+
+    <!-- Representative Financial Ledger & KPI Cards -->
+    <div class="admin-kpi-grid">
+      <div class="admin-kpi-card">
+        <div class="kpi-label">Shops Visited</div>
+        <div class="kpi-number text-purple" id="rep-metric-visits">0</div>
+        <div class="kpi-sub">Visits completed today</div>
+      </div>
+      <div class="admin-kpi-card">
+        <div class="kpi-label">Procurement Total</div>
+        <div class="kpi-number" id="rep-metric-procured">₹0</div>
+        <div class="kpi-sub">Orders value today</div>
+      </div>
+      <div class="admin-kpi-card">
+        <div class="kpi-label">Starting Float</div>
+        <div class="kpi-number" id="rep-metric-float">₹0</div>
+        <div class="kpi-sub">Morning cash issued</div>
+      </div>
+      <div class="admin-kpi-card kpi-success">
+        <div class="kpi-label">Cash Collected</div>
+        <div class="kpi-number" style="color: var(--success-color);" id="rep-metric-cash-col">+ ₹0</div>
+        <div class="kpi-sub">Field cash received</div>
+      </div>
+      <div class="admin-kpi-card kpi-danger">
+        <div class="kpi-label">Expenses Logged</div>
+        <div class="kpi-number" style="color: var(--danger-color);" id="rep-metric-expenses">- ₹0</div>
+        <div class="kpi-sub">Travel & fuel</div>
+      </div>
+      <div class="admin-kpi-card kpi-warning">
+        <div class="kpi-label">Net Cash in Hand</div>
+        <div class="kpi-number" style="color: var(--purple-dark);" id="rep-metric-net-cash">₹0</div>
+        <div class="kpi-sub">Float + Cash - Expenses</div>
+      </div>
+    </div>
+
+    <!-- What This Person is Doing (Live Chronological Timeline) -->
+    <div style="margin-top: 24px;">
+      <div class="page-header-row">
+        <div>
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--purple-primary);">Live Route & Field Timeline</h3>
+          <p class="text-muted" style="font-size: 0.85rem;">Real-time feed showing what this representative is doing today</p>
+        </div>
+        <span class="status-badge active">Auto-Sync Live</span>
+      </div>
+
+      <div class="timeline-list" id="rep-activity-timeline">
+        <div class="card text-center text-muted" style="padding: 24px;">Loading activity timeline...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ISSUE / ADJUST FLOAT MODAL -->
+  <div id="issue-float-modal" class="sina-modal-backdrop">
+    <div class="sina-modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--purple-primary);">Issue Daily Cash Float</h3>
+        <button class="icon-btn" id="btn-close-float-modal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="issue-float-form">
+        <div class="form-group">
+          <label class="form-label" for="float_amount_input">Float Amount (₹) *</label>
+          <input type="number" id="float_amount_input" class="form-input" placeholder="e.g. 15000" min="100" step="any" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="float_notes_input">Notes / Route Purpose</label>
+          <input type="text" id="float_notes_input" class="form-input" placeholder="e.g. Morning procurement cash allowance">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">
+          Assign Cash Float
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FULL PROOF IMAGE VIEWER MODAL -->
+  <div id="proof-view-modal" class="sina-modal-backdrop" onclick="closeProofModal()">
+    <div class="sina-modal-card" style="padding: 12px; text-align: center;" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span class="status-badge active">Uploaded Passbook / Cheque</span>
+        <button class="icon-btn" onclick="closeProofModal()">&times;</button>
+      </div>
+      <img id="proof-view-img" src="" style="width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius-md);" alt="Proof">
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/rep-detail.js"></script>
+</body>
+</html>

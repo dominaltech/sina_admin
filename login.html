@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Login - SINA Admin Portal</title>
+  <meta name="theme-color" content="#4C1D95">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    body {
+      padding-top: 0;
+      padding-bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-secondary);
+    }
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px 16px;
+    }
+    .login-card {
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      padding: 32px 24px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+    }
+    .login-brand-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .login-logo-box {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--purple-dark), var(--purple-primary));
+      color: #FFFFFF;
+      border-radius: var(--radius-lg);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 16px var(--purple-shadow);
+    }
+    .login-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+    .login-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-brand-header">
+        <div class="login-logo-box">SINA</div>
+        <h1 class="login-title">Admin Portal Login</h1>
+        <p class="login-subtitle">Operations & Field Management Control</p>
+      </div>
+
+      <form id="admin-login-form">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="admin_email">Administrator Email</label>
+          <input type="text" id="admin_email" class="form-input" placeholder="admin@sina.com" value="admin@sina.com" required autofocus>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" for="admin_password">Password</label>
+          <input type="password" id="admin_password" class="form-input" placeholder="Enter password (default: admin123)" value="admin123" required>
+        </div>
+
+        <button type="submit" id="btn-admin-submit" class="btn btn-primary btn-block">
+          Sign In as Administrator
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('admin_email').value.trim();
+      const pass = document.getElementById('admin_password').value.trim();
+      const btn = document.getElementById('btn-admin-submit');
+
+      btn.disabled = true;
+      btn.textContent = 'Authenticating...';
+
+      try {
+        await window.sinaAdminAuth.login(email, pass);
+        window.location.href = 'index.html';
+      } catch (err) {
+        alert(err.message);
+        btn.disabled = false;
+        btn.textContent = 'Sign In as Administrator';
+      }
+    });
+  </script>
+</body>
+</html>

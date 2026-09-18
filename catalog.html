@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Product Catalog & Rates - SINA Admin Portal</title>
+  <meta name="theme-color" content="#4C1D95">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <main class="admin-container">
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Commodities & Product Master</h1>
+        <p class="page-subtitle">Configure product categories, item types, benchmark rates, and units (kg, piece, bag).</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" id="btn-open-add-cat" class="btn btn-secondary btn-sm">
+          + Add Category
+        </button>
+        <button type="button" id="btn-open-add-prod" class="btn btn-primary btn-sm">
+          + Add Product
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Categories Chips -->
+    <div class="card" style="margin-bottom: 20px;">
+      <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--purple-primary); margin-bottom: 8px;">Active Categories</h3>
+      <div id="categories-chip-list" style="display: flex; flex-wrap: wrap;">
+        <span class="text-muted">Loading categories...</span>
+      </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Product Name</th>
+            <th>Type / Variety</th>
+            <th>Category</th>
+            <th>Default Unit</th>
+            <th>Benchmark Rate</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="products-table-tbody">
+          <tr>
+            <td colspan="6" class="text-center text-muted" style="padding: 24px;">Loading product catalog...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- ADD CATEGORY MODAL -->
+  <div id="add-cat-modal" class="sina-modal-backdrop">
+    <div class="sina-modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--purple-primary);">Add Product Category</h3>
+        <button class="icon-btn" id="btn-close-cat-modal">&times;</button>
+      </div>
+      <form id="add-cat-form">
+        <div class="form-group">
+          <label class="form-label" for="new_cat_name">Category Name *</label>
+          <input type="text" id="new_cat_name" class="form-input" placeholder="e.g. Edible Oils, Seeds, Fertilisers" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">Save Category</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD PRODUCT MODAL -->
+  <div id="add-prod-modal" class="sina-modal-backdrop">
+    <div class="sina-modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--purple-primary);">Add New Product</h3>
+        <button class="icon-btn" id="btn-close-prod-modal">&times;</button>
+      </div>
+      <form id="add-prod-form">
+        <div class="form-group">
+          <label class="form-label" for="prod_category_select">Category *</label>
+          <select id="prod_category_select" class="form-select" required>
+            <option value="">-- Choose Category --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new_prod_name">Product Name *</label>
+          <input type="text" id="new_prod_name" class="form-input" placeholder="e.g. Basmati Rice, Mustard Seed" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new_prod_type">Type / Grade</label>
+          <input type="text" id="new_prod_type" class="form-input" placeholder="e.g. Super 1121, Grade A">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new_prod_unit">Unit of Measure *</label>
+          <select id="new_prod_unit" class="form-select" required>
+            <option value="per_kg">Per Kg</option>
+            <option value="per_piece">Per Piece</option>
+            <option value="per_bag">Per Bag</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new_prod_rate">Default Rate (₹) *</label>
+          <input type="number" id="new_prod_rate" class="form-input" placeholder="e.g. 45.00" min="0.1" step="any" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 16px;">Add to Catalog</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/catalog.js"></script>
+</body>
+</html>

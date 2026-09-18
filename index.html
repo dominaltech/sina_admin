@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard - SINA Admin Portal</title>
+  <meta name="description" content="SINA Operations & Field Representative Management Portal">
+  <meta name="theme-color" content="#4C1D95">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <main class="admin-container">
+    <!-- Top Header Title Row -->
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Operations Dashboard</h1>
+        <p class="page-subtitle" id="dashboard-view-scope">Showing consolidated operations for all active field representatives</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a href="representatives.html" class="btn btn-primary btn-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Manage Reps & Passwords
+        </a>
+      </div>
+    </div>
+
+    <!-- Dual-View Filter Bar (All Reps vs Particular Rep) -->
+    <div class="rep-filter-bar">
+      <div class="filter-left-col">
+        <span class="filter-label">Filter Operations By:</span>
+        <select id="dashboard-rep-filter" class="rep-filter-select">
+          <option value="">Loading representatives...</option>
+        </select>
+      </div>
+      <div>
+        <span class="status-badge active">Real-Time Sync Active</span>
+      </div>
+    </div>
+
+    <!-- 5 Live KPI Metric Cards -->
+    <div class="admin-kpi-grid">
+      <div class="admin-kpi-card">
+        <div class="kpi-label">Today's Procured</div>
+        <div class="kpi-number text-purple" id="kpi-procurement-val">₹0</div>
+        <div class="kpi-sub">Total commodity value</div>
+      </div>
+      <div class="admin-kpi-card">
+        <div class="kpi-label">Morning Float</div>
+        <div class="kpi-number" id="kpi-float-val">₹0</div>
+        <div class="kpi-sub">Disbursed cash float</div>
+      </div>
+      <div class="admin-kpi-card kpi-success">
+        <div class="kpi-label">Cash Collected</div>
+        <div class="kpi-number" style="color: var(--success-color);" id="kpi-cash-collected">+ ₹0</div>
+        <div class="kpi-sub">Field procurement cash</div>
+      </div>
+      <div class="admin-kpi-card kpi-danger">
+        <div class="kpi-label">Field Expenses</div>
+        <div class="kpi-number" style="color: var(--danger-color);" id="kpi-expenses-val">- ₹0</div>
+        <div class="kpi-sub">Travel, fuel, refreshments</div>
+      </div>
+      <div class="admin-kpi-card kpi-warning">
+        <div class="kpi-label">Net Cash In Field</div>
+        <div class="kpi-number" style="color: var(--purple-dark);" id="kpi-net-cash-val">₹0</div>
+        <div class="kpi-sub">Float + Cash - Expenses</div>
+      </div>
+    </div>
+
+    <!-- Live Cash Float Reconciliation Summary Card -->
+    <div class="reconciliation-card" id="recon-summary-card">
+      <div class="text-center text-muted">Calculating live reconciliation...</div>
+    </div>
+
+    <!-- Recent Field Activities Table -->
+    <div style="margin-top: 24px;">
+      <div class="page-header-row" style="margin-bottom: 12px;">
+        <h3 style="font-size: 1.15rem; font-weight: 700;">Live Field Activity Feed</h3>
+        <a href="approvals.html" class="text-purple font-bold" style="font-size: 0.85rem;">Review Approvals &rarr;</a>
+      </div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Representative</th>
+              <th>Firm / Shop</th>
+              <th>Product / Details</th>
+              <th>Amount</th>
+              <th>Mode</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="recent-activity-tbody">
+            <tr>
+              <td colspan="7" class="text-center text-muted" style="padding: 24px;">Loading activities...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

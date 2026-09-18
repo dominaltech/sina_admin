@@ -1,0 +1,85 @@
+/* SINA Admin - Design Tokens & Base CSS */
+/* Palette: Pure White, Deep Charcoal/Black Text, 20% Deep Dark Purple */
+
+:root {
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-tertiary: #F1F5F9;
+  
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --text-inverse: #FFFFFF;
+
+  --purple-primary: #4C1D95;       /* Main interactive dark purple */
+  --purple-dark: #3B0764;          /* Header gradient / accent */
+  --purple-light: #5B21B6;
+  --purple-tint: #F5F3FF;
+  --purple-border: #DDD6FE;
+  --purple-shadow: rgba(76, 29, 149, 0.15);
+
+  --border-color: #E2E8F0;
+  --border-focus: #4C1D95;
+
+  --success-color: #059669;
+  --success-bg: #ECFDF5;
+  --warning-color: #D97706;
+  --warning-bg: #FFFBEB;
+  --danger-color: #DC2626;
+  --danger-bg: #FEF2F2;
+
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(76, 29, 149, 0.1);
+
+  --header-height: 58px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  padding-top: var(--header-height);
+  padding-bottom: 40px;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.admin-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+h1, h2, h3, h4, h5 {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.text-center { text-align: center; }
+.text-muted { color: var(--text-secondary); font-size: 0.875rem; }
+.text-purple { color: var(--purple-primary); }
+.font-bold { font-weight: 700; }
