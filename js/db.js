@@ -299,6 +299,74 @@
         recentExpenses: todayExpenses
       };
     }
+
+    // 6. RESET ALL DATA (Make it like starting new)
+    async resetAllData() {
+      // Clear entries, expenses, notifications
+      localStorage.setItem('sina_entries', JSON.stringify([]));
+      localStorage.setItem('sina_expenses', JSON.stringify([]));
+      localStorage.setItem('sina_admin_notifications', JSON.stringify([]));
+
+      // Reset daily floats to starting default
+      const defaultFloats = [
+        { id: 'df1', representative_id: '22222222-2222-2222-2222-222222222222', date: new Date().toISOString().split('T')[0], float_amount: 15000.00, notes: 'Morning procurement cash float' },
+        { id: 'df2', representative_id: '33333333-3333-3333-3333-333333333333', date: new Date().toISOString().split('T')[0], float_amount: 10000.00, notes: 'South zone daily allowance' }
+      ];
+      localStorage.setItem('sina_floats', JSON.stringify(defaultFloats));
+
+      // Reset representative profiles & passwords to defaults
+      const defaultProfiles = [
+        {
+          id: '22222222-2222-2222-2222-222222222222',
+          name: 'Rahul Sharma',
+          phone: '9811223344',
+          password_hash: 'rep123',
+          role: 'representative',
+          assigned_route: 'North Wholesale Market',
+          status: 'active',
+          created_at: new Date().toISOString()
+        },
+        {
+          id: '33333333-3333-3333-3333-333333333333',
+          name: 'Suresh Kumar',
+          phone: '9822334455',
+          password_hash: 'rep123',
+          role: 'representative',
+          assigned_route: 'South Industrial Zone',
+          status: 'active',
+          created_at: new Date().toISOString()
+        },
+        {
+          id: '44444444-4444-4444-4444-444444444444',
+          name: 'Amit Patel',
+          phone: '9833445566',
+          password_hash: 'rep123',
+          role: 'representative',
+          assigned_route: 'East Rural Mandi',
+          status: 'active',
+          created_at: new Date().toISOString()
+        }
+      ];
+      localStorage.setItem('sina_profiles', JSON.stringify(defaultProfiles));
+
+      // Reset firms to defaults
+      const defaultFirms = [
+        { id: 'f1', firm_name: 'Kishan Trading Co.', contact_person: 'Ramesh Kishan', mobile: '9876501234', address: 'Plot 42, APMC Mandi, Sector 19' },
+        { id: 'f2', firm_name: 'Mahadev Agro Agency', contact_person: 'Mahesh Bhai', mobile: '9876502345', address: '12/A Grain Merchant Lane, Old City' },
+        { id: 'f3', firm_name: 'Shree Balaji Enterprises', contact_person: 'Gopal Sharma', mobile: '9876503456', address: 'Shop 7, Main Wholesale Market' },
+        { id: 'f4', firm_name: 'Om Sai Agro Foods', contact_person: 'Sunil Patil', mobile: '9876504567', address: 'Highway Bypass Mandi, Gate 2' },
+        { id: 'f5', firm_name: 'Annapurna Grain Stores', contact_person: 'Dinesh Agarwal', mobile: '9876505678', address: 'Station Road, Near Central Warehouse' }
+      ];
+      localStorage.setItem('sina_firms', JSON.stringify(defaultFirms));
+
+      // Broadcast reset event across channels to instantly sync SINA App
+      if (this.channel) {
+        try {
+          this.channel.postMessage({ type: 'SYSTEM_RESET', timestamp: Date.now() });
+        } catch (e) {}
+      }
+      localStorage.setItem('sina_last_event', JSON.stringify({ type: 'SYSTEM_RESET', timestamp: Date.now() }));
+    }
   }
 
   window.sinaAdminDB = new SINA_AdminDB();

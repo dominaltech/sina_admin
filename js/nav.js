@@ -93,12 +93,23 @@
         </nav>
 
         <div class="drawer-footer">
+          <button class="btn btn-outline-purple btn-block" style="color: var(--danger-color); border-color: rgba(220,38,38,0.4); margin-bottom: 8px;" onclick="window.triggerSystemReset()">
+            ${icons.get('refresh', { size: 18 })} Reset All Data
+          </button>
           <button class="btn btn-logout btn-block" onclick="window.sinaAdminAuth.logout()">
             ${icons.get('logout', { size: 18 })} Sign Out
           </button>
         </div>
       </div>
     `;
+
+    window.triggerSystemReset = async function() {
+      if (confirm('Are you sure you want to reset all field data?\n\nThis will wipe all orders, reset field expenses to ₹0, restore fresh morning cash floats, and reset representative passwords back to default (rep123).')) {
+        await window.sinaAdminDB.resetAllData();
+        alert('All field operations data has been reset to starting fresh state.');
+        window.location.reload();
+      }
+    };
 
     // 3. TOAST CONTAINER FOR REAL-TIME ALERTS
     let toastContainer = document.getElementById('admin-toast-container');

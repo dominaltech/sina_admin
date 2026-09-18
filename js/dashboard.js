@@ -18,11 +18,52 @@
         await loadDashboard();
       });
     }
+
+    setupResetDataModal();
   });
 
   window.refreshAdminData = async function() {
     await loadDashboard();
   };
+
+  function setupResetDataModal() {
+    const triggerBtn = document.getElementById('btn-trigger-reset');
+    const modal = document.getElementById('reset-confirm-modal');
+    const closeBtn = document.getElementById('btn-close-reset-modal');
+    const cancelBtn = document.getElementById('btn-cancel-reset');
+    const confirmBtn = document.getElementById('btn-confirm-reset');
+
+    if (!modal) return;
+
+    if (triggerBtn) triggerBtn.addEventListener('click', () => modal.classList.add('active'));
+    if (closeBtn) closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+    if (cancelBtn) cancelBtn.addEventListener('click', () => modal.classList.remove('active'));
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Resetting...';
+        try {
+          await window.sinaAdminDB.resetAllData();
+          modal.classList.remove('active');
+          if (window.showLiveToast) {
+            window.showLiveToast({
+              type: 'SYSTEM_RESET',
+              payload: { rep_name: 'Admin', firm_name: 'All Operations Reset', total_amount: 0, payment_mode: 'RESET' }
+            });
+          }
+          await initRepsDropdown();
+          await loadDashboard();
+          alert('Success: All representative data, orders, and expenses have been reset to a fresh starting state.');
+        } catch (err) {
+          alert('Error during reset: ' + err.message);
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Yes, Reset All';
+        }
+      });
+    }
+  }
 
   async function initRepsDropdown() {
     allReps = await window.sinaAdminDB.getRepresentatives();
