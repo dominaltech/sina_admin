@@ -517,36 +517,50 @@
       const allExpenses = await this.getExpenses(repId);
       const allFloats = await this.getDailyFloats();
 
-      const todayEntries = allEntries.filter(e => e.created_at.startsWith(today));
-      const todayExpenses = allExpenses.filter(e => e.created_at.startsWith(today));
+      const todayEntries = allEntries.filter(e => e.created_at && e.created_at.startsWith(today));
+      const todayExpenses = allExpenses.filter(e => e.created_at && e.created_at.startsWith(today));
 
-      let totalFloatDisbursed = 0;
+      // 1. Total Cash Given Overall (All-time)
+      let totalCashGivenOverall = 0;
+      if (repId) {
+        totalCashGivenOverall = allFloats
+          .filter(f => f.representative_id === repId)
+          .reduce((acc, curr) => acc + (parseFloat(curr.float_amount) || 0), 0);
+      } else {
+        totalCashGivenOverall = allFloats
+          .reduce((acc, curr) => acc + (parseFloat(curr.float_amount) || 0), 0);
+      }
+
+      // 2. Total Cash Given Today
+      let totalCashGivenToday = 0;
       if (repId) {
         const repFloat = allFloats.find(f => f.representative_id === repId && f.date === today);
-        totalFloatDisbursed = repFloat ? repFloat.float_amount : 15000.00;
+        totalCashGivenToday = repFloat ? (parseFloat(repFloat.float_amount) || 0) : 15000.00;
       } else {
-        totalFloatDisbursed = allFloats
+        totalCashGivenToday = allFloats
           .filter(f => f.date === today)
           .reduce((acc, curr) => acc + (parseFloat(curr.float_amount) || 0), 0);
-        if (totalFloatDisbursed === 0) totalFloatDisbursed = 25000.00; // default seed for multiple reps
+        if (totalCashGivenToday === 0) totalCashGivenToday = 25000.00; // default initial float seed
       }
 
       const totalProcurement = todayEntries.reduce((acc, curr) => acc + (parseFloat(curr.total_amount) || 0), 0);
-      const cashCollected = todayEntries.reduce((acc, curr) => acc + (parseFloat(curr.cash_amount) || 0), 0);
+      const todayCashSpent = todayEntries.filter(e => e.payment_mode === 'cash').reduce((acc, curr) => acc + (parseFloat(curr.total_amount) || 0), 0);
       const upiCollected = todayEntries.filter(e => e.payment_mode === 'upi').reduce((acc, curr) => acc + (parseFloat(curr.total_amount) || 0), 0);
       const bankTransferCollected = todayEntries.filter(e => e.payment_mode === 'bank_transfer').reduce((acc, curr) => acc + (parseFloat(curr.total_amount) || 0), 0);
       const totalExpenses = todayExpenses.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
 
-      // Live net cash in field = Disbursed Float + Cash Collected - Expenses
-      const netCashInHand = totalFloatDisbursed + cashCollected - totalExpenses;
+      // Remaining cash in hand = Cash Given Today - Cash Purchases Spent - Expenses Spent
+      const netCashInHand = Math.max(0, totalCashGivenToday - todayCashSpent - totalExpenses);
 
       const pendingApprovalsCount = todayEntries.filter(e => e.status === 'pending_approval' || e.status === 'pending' || (e.payment_mode !== 'cash' && e.status !== 'verified')).length;
 
       return {
         todayVisitsCount: todayEntries.length,
         totalProcurement,
-        totalFloatDisbursed,
-        cashCollected,
+        totalCashGivenOverall,
+        totalCashGivenToday,
+        totalFloatDisbursed: totalCashGivenToday, // backwards compatibility
+        todayCashSpent,
         upiCollected,
         bankTransferCollected,
         totalExpenses,
@@ -555,6 +569,82 @@
         recentEntries: (allEntries && allEntries.length > 0) ? allEntries.slice(0, 50) : todayEntries,
         recentExpenses: (allExpenses && allExpenses.length > 0) ? allExpenses.slice(0, 50) : todayExpenses
       };
+    }
+
+    // 5b. REPRESENTATIVE PURCHASES & CASH FOR SPECIFIC DATE (Calendar-driven)
+    async getRepPurchasesAndCashForDate(repId, targetDate) {
+      if (!targetDate) targetDate = new Date().toISOString().split('T')[0];
+      const allEntries = await this.getProcurementEntries(repId);
+      const allExpenses = await this.getExpenses(repId);
+      const allFloats = await this.getDailyFloats();
+
+      const dayEntries = allEntries.filter(e => e.created_at && e.created_at.startsWith(targetDate));
+      const dayExpenses = allExpenses.filter(e => e.created_at && e.created_at.startsWith(targetDate));
+
+      const floatRecord = allFloats.find(f => f.representative_id === repId && f.date === targetDate);
+      const cashGiven = floatRecord ? (parseFloat(floatRecord.float_amount) || 0) : 0;
+      const notes = floatRecord ? (floatRecord.notes || '') : '';
+
+      const totalProcurement = dayEntries.reduce((acc, curr) => acc + (parseFloat(curr.total_amount) || 0), 0);
+      const cashSpent = dayEntries.filter(e => e.payment_mode === 'cash').reduce((acc, curr) => acc + (parseFloat(curr.total_amount) || 0), 0);
+      const upiSpent = dayEntries.filter(e => e.payment_mode === 'upi').reduce((acc, curr) => acc + (parseFloat(curr.total_amount) || 0), 0);
+      const bankSpent = dayEntries.filter(e => e.payment_mode === 'bank_transfer').reduce((acc, curr) => acc + (parseFloat(curr.total_amount) || 0), 0);
+      const totalExpenses = dayExpenses.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+
+      const netCashBalance = Math.max(0, cashGiven - cashSpent - totalExpenses);
+
+      return {
+        date: targetDate,
+        cashGiven,
+        notes,
+        hasFloatRecord: !!floatRecord,
+        entries: dayEntries,
+        expenses: dayExpenses,
+        totalVisits: dayEntries.length,
+        totalProcurement,
+        cashSpent,
+        upiSpent,
+        bankSpent,
+        totalExpenses,
+        netCashBalance
+      };
+    }
+
+    // 5c. GET ALL PURCHASES WITH MULTI-CRITERIA FILTERS
+    async getAllPurchases(filters = {}) {
+      const allEntries = await this.getProcurementEntries();
+      let results = allEntries;
+
+      // Filter by Date (YYYY-MM-DD)
+      if (filters.date) {
+        results = results.filter(e => e.created_at && e.created_at.startsWith(filters.date));
+      }
+
+      // Filter by Representative
+      if (filters.repId) {
+        results = results.filter(e => e.representative_id === filters.repId);
+      }
+
+      // Filter by Payment Mode
+      if (filters.paymentMode && filters.paymentMode !== 'all') {
+        results = results.filter(e => (e.payment_mode || 'cash').toLowerCase() === filters.paymentMode.toLowerCase());
+      }
+
+      // Filter by Search Query
+      if (filters.search && filters.search.trim() !== '') {
+        const q = filters.search.trim().toLowerCase();
+        results = results.filter(e => {
+          const firm = (e.firm_name || '').toLowerCase();
+          const rep = (e.rep_name || '').toLowerCase();
+          const contact = (e.contact_person || '').toLowerCase();
+          const item = (e.type || e.category_name || '').toLowerCase();
+          const mobile = (e.mobile || '').toLowerCase();
+          const addr = (e.address || '').toLowerCase();
+          return firm.includes(q) || rep.includes(q) || contact.includes(q) || item.includes(q) || mobile.includes(q) || addr.includes(q);
+        });
+      }
+
+      return results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
     // 6. RESET ALL DATA (Make it like starting new)

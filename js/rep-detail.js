@@ -1,7 +1,8 @@
-// SINA Admin - Representative Live Tracking Controller
+// SINA Admin - Representative Live Tracking & Calendar Operations Controller
 (function() {
   let currentRep = null;
   let repId = null;
+  let selectedDate = new Date().toISOString().split('T')[0];
 
   document.addEventListener('DOMContentLoaded', async () => {
     const admin = window.sinaAdminAuth.requireAdmin();
@@ -16,13 +17,39 @@
       return;
     }
 
+    initCalendarChooser();
     await loadRepDetails();
+    await loadDateSpecificOperations(selectedDate);
     setupFloatModal();
   });
 
   window.refreshAdminData = async function() {
     await loadRepDetails();
+    await loadDateSpecificOperations(selectedDate);
   };
+
+  function initCalendarChooser() {
+    const dateInput = document.getElementById('rep-calendar-date');
+    const todayBtn = document.getElementById('btn-rep-date-today');
+
+    if (dateInput) {
+      dateInput.value = selectedDate;
+      dateInput.addEventListener('change', async (e) => {
+        if (e.target.value) {
+          selectedDate = e.target.value;
+          await loadDateSpecificOperations(selectedDate);
+        }
+      });
+    }
+
+    if (todayBtn) {
+      todayBtn.addEventListener('click', async () => {
+        selectedDate = new Date().toISOString().split('T')[0];
+        if (dateInput) dateInput.value = selectedDate;
+        await loadDateSpecificOperations(selectedDate);
+      });
+    }
+  }
 
   async function loadRepDetails() {
     currentRep = await window.sinaAdminDB.getRepresentativeById(repId);
@@ -43,117 +70,106 @@
       statusPill.textContent = currentRep.status === 'active' ? 'Active in Field' : 'Inactive';
     }
 
-    // Get live data
+    // Get live consolidated metrics for this representative
     const summary = await window.sinaAdminDB.getAdminDashboardMetrics(repId);
     
-    document.getElementById('rep-metric-visits').textContent = summary.todayVisitsCount;
-    document.getElementById('rep-metric-procured').textContent = '₹' + summary.totalProcurement.toLocaleString('en-IN');
-    document.getElementById('rep-metric-float').textContent = '₹' + summary.totalFloatDisbursed.toLocaleString('en-IN');
-    document.getElementById('rep-metric-cash-col').textContent = '+ ₹' + summary.cashCollected.toLocaleString('en-IN');
-    document.getElementById('rep-metric-expenses').textContent = '- ₹' + summary.totalExpenses.toLocaleString('en-IN');
-    document.getElementById('rep-metric-net-cash').textContent = '₹' + summary.netCashInHand.toLocaleString('en-IN');
+    const cashOverallEl = document.getElementById('rep-metric-cash-overall');
+    if (cashOverallEl) cashOverallEl.textContent = '₹' + (summary.totalCashGivenOverall || 0).toLocaleString('en-IN');
 
-    // Render daily cash given history
-    const cashHistory = await window.sinaAdminDB.getDailyFloatsByRep(repId);
-    renderCashHistory(cashHistory);
+    const cashTodayEl = document.getElementById('rep-metric-cash-today');
+    if (cashTodayEl) cashTodayEl.textContent = '₹' + (summary.totalCashGivenToday || 0).toLocaleString('en-IN');
 
-    renderActivityTimeline(summary.recentEntries, summary.recentExpenses);
+    const procEl = document.getElementById('rep-metric-procured');
+    if (procEl) procEl.textContent = '₹' + (summary.totalProcurement || 0).toLocaleString('en-IN');
+
+    const expEl = document.getElementById('rep-metric-expenses');
+    if (expEl) expEl.textContent = '- ₹' + (summary.totalExpenses || 0).toLocaleString('en-IN');
+
+    const netCashEl = document.getElementById('rep-metric-net-cash');
+    if (netCashEl) netCashEl.textContent = '₹' + (summary.netCashInHand || 0).toLocaleString('en-IN');
   }
 
-  function renderCashHistory(records) {
-    const container = document.getElementById('rep-cash-history-list');
-    if (!container) return;
+  async function loadDateSpecificOperations(targetDate) {
+    const data = await window.sinaAdminDB.getRepPurchasesAndCashForDate(repId, targetDate);
 
-    if (!records || records.length === 0) {
-      container.innerHTML = `
-        <div class="card text-muted text-center" style="padding: 20px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-          No cash given recorded yet for this representative.
-        </div>
-      `;
-      return;
-    }
-
-    // 1. Desktop Table
-    let tableHtml = `
-      <div class="cash-log-table-desktop table-responsive">
-        <table class="admin-table" style="margin: 0;">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Cash Given Amount</th>
-              <th>Notes / Route Purpose</th>
-              <th style="text-align: right;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    // 2. Mobile Responsive Card List (Fits 100% on small screens without scroll)
-    let mobileCardsHtml = `<div class="cash-log-cards-mobile">`;
-
-    records.forEach(r => {
-      const d = new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-      const amtStr = '₹' + parseFloat(r.float_amount || 0).toLocaleString('en-IN');
-      const safeNotes = escapeHtml(r.notes || 'Morning cash for purchases');
-
-      tableHtml += `
-        <tr>
-          <td><strong>${d}</strong></td>
-          <td><span style="font-weight: 800; color: var(--purple-primary); font-size: 0.95rem;">${amtStr}</span></td>
-          <td class="text-muted" style="font-size: 0.85rem;">${safeNotes}</td>
-          <td style="text-align: right;">
-            <button class="btn btn-outline-purple btn-sm" onclick="openEditFloatForDate('${r.date}', ${r.float_amount}, '${safeNotes}')">
-              Edit
-            </button>
-          </td>
-        </tr>
-      `;
-
-      mobileCardsHtml += `
-        <div class="cash-log-mobile-item">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text-primary); font-size: 0.88rem;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span>${d}</span>
-            </div>
-            <button class="btn btn-outline-purple btn-sm" onclick="openEditFloatForDate('${r.date}', ${r.float_amount}, '${safeNotes}')" style="padding: 4px 10px; font-size: 0.78rem;">
-              Edit
-            </button>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: baseline; background: var(--bg-secondary); padding: 8px 10px; border-radius: var(--radius-sm); margin-bottom: 6px;">
-            <span class="text-muted" style="font-size: 0.78rem;">Cash Given:</span>
-            <span style="font-size: 1.1rem; font-weight: 800; color: var(--purple-primary);">${amtStr}</span>
-          </div>
-          <div style="font-size: 0.8rem; color: var(--text-secondary);">
-            <span class="text-muted">Notes:</span> ${safeNotes}
-          </div>
-        </div>
-      `;
+    // Format human-friendly date string
+    const dateObj = new Date(targetDate + 'T00:00:00');
+    const isToday = targetDate === new Date().toISOString().split('T')[0];
+    const displayDate = dateObj.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
     });
 
-    tableHtml += `</tbody></table></div>`;
-    mobileCardsHtml += `</div>`;
-
-    container.innerHTML = tableHtml + mobileCardsHtml;
+    renderDayCashBanner(data, displayDate, isToday, targetDate);
+    renderDayPurchases(data, displayDate);
   }
 
-  window.openEditFloatForDate = function(dateStr, amount, notes) {
-    const modal = document.getElementById('issue-float-modal');
-    if (!modal) return;
-    document.getElementById('float_date_input').value = dateStr;
-    document.getElementById('float_amount_input').value = amount;
-    document.getElementById('float_notes_input').value = notes || '';
-    modal.classList.add('active');
-  };
+  function renderDayCashBanner(data, displayDate, isToday, targetDate) {
+    const banner = document.getElementById('rep-day-cash-banner');
+    if (!banner) return;
 
-  function renderActivityTimeline(entries, expenses) {
-    const timelineEl = document.getElementById('rep-activity-timeline');
-    if (!timelineEl) return;
+    const cashStr = '₹' + data.cashGiven.toLocaleString('en-IN');
+    const notesStr = escapeHtml(data.notes || 'No specific notes logged');
+    const actionLabel = data.cashGiven > 0 ? 'Edit Cash for this Date' : 'Give Cash for this Date';
 
-    // Merge entries and expenses into unified chronological events
+    banner.innerHTML = `
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; width: 100%; gap: 12px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="font-weight: 800; font-size: 1.05rem; color: var(--text-primary);">${displayDate}</span>
+            ${isToday ? '<span class="status-badge active" style="font-size: 0.72rem;">Today</span>' : ''}
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span class="text-muted" style="font-size: 0.82rem;">Cash Given:</span>
+            <span style="font-size: 1.35rem; font-weight: 800; color: var(--purple-primary);">${cashStr}</span>
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+            <span class="text-muted">Purpose / Notes:</span> ${notesStr}
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+          <div style="display: flex; gap: 8px;">
+            <div style="background: var(--bg-primary); padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-muted);">Purchases</div>
+              <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-primary);">₹${data.totalProcurement.toLocaleString('en-IN')}</div>
+            </div>
+            <div style="background: var(--bg-primary); padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-muted);">Expenses</div>
+              <div style="font-size: 0.88rem; font-weight: 700; color: var(--danger-color);">- ₹${data.totalExpenses.toLocaleString('en-IN')}</div>
+            </div>
+            <div style="background: var(--purple-tint); padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--purple-border); text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--purple-primary);">Day Balance</div>
+              <div style="font-size: 0.88rem; font-weight: 800; color: var(--purple-dark);">₹${data.netCashBalance.toLocaleString('en-IN')}</div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-sm" onclick="openEditFloatForDate('${targetDate}', ${data.cashGiven}, '${escapeHtml(data.notes || '')}')" style="display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            ${actionLabel}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDayPurchases(data, displayDate) {
+    const titleEl = document.getElementById('rep-day-history-title');
+    const subEl = document.getElementById('rep-day-history-sub');
+    const countBadge = document.getElementById('rep-day-visits-count');
+    const container = document.getElementById('rep-day-purchases-container');
+
+    if (titleEl) titleEl.textContent = `Purchase History for ${displayDate}`;
+    if (subEl) subEl.textContent = `Showing all goods bought and expenses logged by ${currentRep ? currentRep.name : 'representative'} on this date`;
+    if (countBadge) countBadge.textContent = `${data.totalVisits} Purchases (${data.expenses.length} Expenses)`;
+
+    if (!container) return;
+
     const events = [];
 
-    (entries || []).forEach(e => {
+    (data.entries || []).forEach(e => {
       events.push({
         type: 'entry',
         timestamp: new Date(e.created_at).getTime(),
@@ -162,7 +178,7 @@
       });
     });
 
-    (expenses || []).forEach(x => {
+    (data.expenses || []).forEach(x => {
       events.push({
         type: 'expense',
         timestamp: new Date(x.created_at).getTime(),
@@ -174,15 +190,19 @@
     events.sort((a, b) => b.timestamp - a.timestamp);
 
     if (events.length === 0) {
-      timelineEl.innerHTML = `
-        <div class="card text-center text-muted" style="padding: 24px;">
-          No visits or activities logged yet for this representative.
+      container.innerHTML = `
+        <div class="card text-center text-muted" style="padding: 32px 16px; background: var(--bg-primary); border: 1px dashed var(--border-color); border-radius: var(--radius-md);">
+          <div style="display: flex; justify-content: center; margin-bottom: 8px; color: var(--text-muted);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">No purchases or field activity on this date</div>
+          <div style="font-size: 0.82rem;">Select another date from the calendar above or record cash given for this day.</div>
         </div>
       `;
       return;
     }
 
-    let html = '';
+    let html = '<div class="timeline-list">';
     events.forEach(evt => {
       if (evt.type === 'entry') {
         const e = evt.data;
@@ -196,21 +216,22 @@
               <div class="timeline-header">
                 <div>
                   <span class="timeline-title">${escapeHtml(e.firm_name)}</span>
-                  <span class="status-badge active" style="margin-left: 8px; font-size: 0.65rem;">Shop Visit & Purchase</span>
+                  <span class="status-badge active" style="margin-left: 8px; font-size: 0.68rem;">Purchase Record</span>
                 </div>
                 <span class="timeline-time">${evt.timeStr}</span>
               </div>
               <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px;">
-                Contact: <strong>${escapeHtml(e.contact_person)}</strong> (${e.mobile}) &bull; Address: ${escapeHtml(e.address)}
+                Contact: <strong>${escapeHtml(e.contact_person)}</strong> (${escapeHtml(e.mobile || 'N/A')}) &bull; Address: ${escapeHtml(e.address || 'Field Location')}
               </div>
-              <div style="background: var(--bg-secondary); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
-                <span>Item: <strong>${escapeHtml(e.type || e.category_name || 'Goods')}</strong> (${e.quantity} ${e.unit?.replace('per_', '')} @ ₹${e.rate})</span>
-                <span style="font-weight: 800; font-size: 1rem; color: var(--purple-dark);">₹${parseFloat(e.total_amount || 0).toLocaleString('en-IN')}</span>
+              <div style="background: var(--bg-secondary); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span>Item: <strong>${escapeHtml(e.type || e.category_name || 'Goods')}</strong> (${e.quantity} ${escapeHtml(e.unit ? e.unit.replace('per_', '') : 'units')} @ ₹${e.rate})</span>
+                <span style="font-weight: 800; font-size: 1.05rem; color: var(--purple-dark);">₹${parseFloat(e.total_amount || 0).toLocaleString('en-IN')}</span>
               </div>
-              <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                  Payment: <span class="${modeBadge}">${e.payment_mode.toUpperCase()}</span>
-                  ${e.upi_id ? `<span class="text-muted" style="font-size: 0.75rem; margin-left: 6px;">(${escapeHtml(e.upi_id)})</span>` : ''}
+                  Payment: <span class="${modeBadge}">${(e.payment_mode || 'cash').toUpperCase()}</span>
+                  ${e.upi_id ? `<span class="text-muted" style="font-size: 0.75rem; margin-left: 6px;">(UPI: ${escapeHtml(e.upi_id)})</span>` : ''}
+                  ${e.upi_utr ? `<span class="text-muted" style="font-size: 0.75rem; margin-left: 6px;">(UTR: ${escapeHtml(e.upi_utr)})</span>` : ''}
                 </div>
               </div>
               ${hasImages ? `
@@ -234,12 +255,12 @@
             <div class="timeline-content-card" style="border-left: 3px solid var(--danger-color);">
               <div class="timeline-header">
                 <div>
-                  <span class="timeline-title">Expense: ${escapeHtml(x.category?.toUpperCase() || 'GENERAL')}</span>
+                  <span class="timeline-title">Expense: ${escapeHtml(x.category ? x.category.toUpperCase() : 'GENERAL')}</span>
                 </div>
                 <span class="timeline-time">${evt.timeStr}</span>
               </div>
               <div style="font-size: 0.85rem; color: var(--text-secondary);">
-                Amount: <strong style="color: var(--danger-color);">₹${parseFloat(x.amount || 0).toLocaleString('en-IN')}</strong> &bull; Notes: ${escapeHtml(x.notes || 'None')}
+                Amount: <strong style="color: var(--danger-color); font-size: 0.95rem;">- ₹${parseFloat(x.amount || 0).toLocaleString('en-IN')}</strong> &bull; Notes: ${escapeHtml(x.notes || 'None')}
               </div>
             </div>
           </div>
@@ -247,8 +268,18 @@
       }
     });
 
-    timelineEl.innerHTML = html;
+    html += '</div>';
+    container.innerHTML = html;
   }
+
+  window.openEditFloatForDate = function(dateStr, amount, notes) {
+    const modal = document.getElementById('issue-float-modal');
+    if (!modal) return;
+    document.getElementById('float_date_input').value = dateStr;
+    document.getElementById('float_amount_input').value = amount;
+    document.getElementById('float_notes_input').value = notes || '';
+    modal.classList.add('active');
+  };
 
   function setupFloatModal() {
     const openBtn = document.getElementById('btn-issue-float');
@@ -256,18 +287,23 @@
     const closeBtn = document.getElementById('btn-close-float-modal');
     const form = document.getElementById('issue-float-form');
 
-    if (!openBtn || !modal) return;
+    if (!modal) return;
 
-    openBtn.addEventListener('click', () => {
-      document.getElementById('float_date_input').value = new Date().toISOString().split('T')[0];
-      modal.classList.add('active');
-    });
+    if (openBtn) {
+      openBtn.addEventListener('click', () => {
+        document.getElementById('float_date_input').value = selectedDate || new Date().toISOString().split('T')[0];
+        document.getElementById('float_amount_input').value = '';
+        document.getElementById('float_notes_input').value = '';
+        modal.classList.add('active');
+      });
+    }
+
     if (closeBtn) closeBtn.addEventListener('click', () => modal.classList.remove('active'));
 
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const date = document.getElementById('float_date_input')?.value || new Date().toISOString().split('T')[0];
+        const date = document.getElementById('float_date_input')?.value || selectedDate;
         const amount = parseFloat(document.getElementById('float_amount_input')?.value) || 0;
         const notes = document.getElementById('float_notes_input')?.value.trim();
 
@@ -277,9 +313,12 @@
         }
 
         await window.sinaAdminDB.issueDailyFloat(repId, amount, notes, date);
-        alert(`Cash given of ₹${amount.toLocaleString('en-IN')} recorded for ${currentRep.name}.`);
+        alert(`Cash given of ₹${amount.toLocaleString('en-IN')} recorded for ${currentRep.name} on ${date}.`);
         modal.classList.remove('active');
+        
+        // Refresh both top level metrics and date-specific view
         await loadRepDetails();
+        await loadDateSpecificOperations(selectedDate);
       });
     }
   }

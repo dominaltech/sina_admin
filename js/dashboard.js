@@ -81,11 +81,20 @@
     const metrics = await window.sinaAdminDB.getAdminDashboardMetrics(selectedRepId);
 
     // Update KPIs
-    document.getElementById('kpi-procurement-val').textContent = '₹' + metrics.totalProcurement.toLocaleString('en-IN');
-    document.getElementById('kpi-float-val').textContent = '₹' + metrics.totalFloatDisbursed.toLocaleString('en-IN');
-    document.getElementById('kpi-cash-collected').textContent = '+ ₹' + metrics.cashCollected.toLocaleString('en-IN');
-    document.getElementById('kpi-expenses-val').textContent = '- ₹' + metrics.totalExpenses.toLocaleString('en-IN');
-    document.getElementById('kpi-net-cash-val').textContent = '₹' + metrics.netCashInHand.toLocaleString('en-IN');
+    const cashOverallEl = document.getElementById('kpi-cash-overall-val');
+    if (cashOverallEl) cashOverallEl.textContent = '₹' + metrics.totalCashGivenOverall.toLocaleString('en-IN');
+
+    const cashTodayEl = document.getElementById('kpi-cash-today-val');
+    if (cashTodayEl) cashTodayEl.textContent = '₹' + metrics.totalCashGivenToday.toLocaleString('en-IN');
+
+    const procEl = document.getElementById('kpi-procurement-val');
+    if (procEl) procEl.textContent = '₹' + metrics.totalProcurement.toLocaleString('en-IN');
+
+    const expEl = document.getElementById('kpi-expenses-val');
+    if (expEl) expEl.textContent = '- ₹' + metrics.totalExpenses.toLocaleString('en-IN');
+
+    const netCashEl = document.getElementById('kpi-net-cash-val');
+    if (netCashEl) netCashEl.textContent = '₹' + metrics.netCashInHand.toLocaleString('en-IN');
 
     // Subtitle indicator
     const filterSubtitle = document.getElementById('dashboard-view-scope');
@@ -110,18 +119,18 @@
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <div>
           <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--purple-primary);">Today's Cash Balance Summary</h3>
-          <p class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">Daily summary of cash given, collected, spent, and balance in hand</p>
+          <p class="text-muted" style="font-size: 0.78rem; margin-top: 2px;">Daily summary of cash given, purchases spent, daily expenses, and balance in hand</p>
         </div>
         <span class="status-badge active">Live Balance</span>
       </div>
       <div class="recon-grid">
         <div class="recon-item">
-          <div class="recon-item-lbl">Morning Cash Given</div>
-          <div class="recon-item-val">₹${m.totalFloatDisbursed.toLocaleString('en-IN')}</div>
+          <div class="recon-item-lbl">Cash Given Today</div>
+          <div class="recon-item-val">₹${m.totalCashGivenToday.toLocaleString('en-IN')}</div>
         </div>
         <div class="recon-item">
-          <div class="recon-item-lbl">Cash Collected in Field</div>
-          <div class="recon-item-val" style="color: var(--success-color);">+ ₹${m.cashCollected.toLocaleString('en-IN')}</div>
+          <div class="recon-item-lbl">Cash Purchases Spent</div>
+          <div class="recon-item-val" style="color: var(--danger-color);">- ₹${(m.todayCashSpent || 0).toLocaleString('en-IN')}</div>
         </div>
         <div class="recon-item">
           <div class="recon-item-lbl">Daily Expenses Spent</div>

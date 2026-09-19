@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Purchase History - SINA Admin</title>
+  <meta name="theme-color" content="#4C1D95">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .history-filter-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .history-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      align-items: flex-end;
+    }
+    .history-summary-strip {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .history-table-desktop th {
+      background: var(--bg-secondary);
+      font-size: 0.75rem;
+      padding: 12px 14px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+    .history-table-desktop td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.88rem;
+    }
+    .history-mobile-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+    .proof-thumb {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--purple-border);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .proof-thumb:hover {
+      transform: scale(1.08);
+    }
+    @media (max-width: 768px) {
+      .history-table-desktop {
+        display: none !important;
+      }
+      .history-mobile-list {
+        display: block !important;
+      }
+    }
+    @media (min-width: 769px) {
+      .history-table-desktop {
+        display: block !important;
+      }
+      .history-mobile-list {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="admin-container">
+    <!-- Header -->
+    <div class="page-header-row" style="margin-bottom: 16px;">
+      <div>
+        <h1 class="page-title">Purchase History</h1>
+        <p class="page-subtitle">Complete record of field purchases across representatives, dates, and firms.</p>
+      </div>
+      <div>
+        <span class="status-badge active">Auto-Syncing</span>
+      </div>
+    </div>
+
+    <!-- Multi-Criteria Filters Bar -->
+    <div class="history-filter-card">
+      <div class="history-filter-grid">
+        <!-- 1. Date Filter -->
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="history-date-filter" style="font-size: 0.78rem; font-weight: 700;">Filter by Date</label>
+          <div style="display: flex; gap: 6px;">
+            <input type="date" id="history-date-filter" class="form-input" style="padding: 7px 10px; font-size: 0.88rem;">
+            <button type="button" id="btn-filter-today" class="btn btn-outline-purple btn-sm" style="padding: 6px 10px; white-space: nowrap;">Today</button>
+            <button type="button" id="btn-filter-all-dates" class="btn btn-outline-purple btn-sm" style="padding: 6px 10px; white-space: nowrap;">All</button>
+          </div>
+        </div>
+
+        <!-- 2. Representative Filter -->
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="history-rep-filter" style="font-size: 0.78rem; font-weight: 700;">Representative</label>
+          <select id="history-rep-filter" class="form-select" style="padding: 7px 10px; font-size: 0.88rem;">
+            <option value="">All Representatives</option>
+          </select>
+        </div>
+
+        <!-- 3. Search Query -->
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="history-search-input" style="font-size: 0.78rem; font-weight: 700;">Search Purchases</label>
+          <input type="text" id="history-search-input" class="form-input" placeholder="Search firm, item, contact, phone..." style="padding: 7px 10px; font-size: 0.88rem;">
+        </div>
+
+        <!-- 4. Payment Mode Filter -->
+        <div class="form-group" style="margin: 0;">
+          <label class="form-label" for="history-payment-filter" style="font-size: 0.78rem; font-weight: 700;">Payment Mode</label>
+          <select id="history-payment-filter" class="form-select" style="padding: 7px 10px; font-size: 0.88rem;">
+            <option value="all">All Modes</option>
+            <option value="cash">1. Cash</option>
+            <option value="upi">2. UPI</option>
+            <option value="bank_transfer">3. Bank Transfer</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Summary Strip -->
+    <div class="history-summary-strip">
+      <div>
+        <span style="font-size: 0.82rem; color: var(--text-muted);">Active Filter Scope:</span>
+        <strong id="history-scope-label" style="font-size: 0.88rem; color: var(--purple-primary); margin-left: 4px;">All Dates & Bull; All Representatives</strong>
+      </div>
+      <div style="display: flex; gap: 16px; align-items: baseline;">
+        <div>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Total Orders:</span>
+          <strong id="history-count" style="font-size: 1rem; color: var(--text-primary); margin-left: 4px;">0</strong>
+        </div>
+        <div>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Total Spent:</span>
+          <strong id="history-total-spent" style="font-size: 1.25rem; font-weight: 800; color: var(--purple-dark); margin-left: 4px;">₹0</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results List / Table Container -->
+    <div id="history-results-container">
+      <div class="card text-center text-muted" style="padding: 36px 16px;">
+        Loading purchase records...
+      </div>
+    </div>
+  </main>
+
+  <!-- Cheque / Passbook Image Modal -->
+  <div id="proof-view-modal" class="sina-modal-backdrop" onclick="closeProofModal()">
+    <div class="sina-modal-card" style="padding: 12px; text-align: center;" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span class="status-badge active">Uploaded Passbook / Cheque</span>
+        <button class="icon-btn" onclick="closeProofModal()">&times;</button>
+      </div>
+      <img id="proof-view-img" src="" style="width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius-md);" alt="Proof">
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/history.js"></script>
+</body>
+</html>

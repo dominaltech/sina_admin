@@ -8,6 +8,7 @@ const ASSETS_TO_CACHE = [
   'rep-detail.html',
   'catalog.html',
   'firms.html',
+  'history.html',
   'approvals.html',
   'manifest.json',
   'css/base.css',
@@ -23,6 +24,7 @@ const ASSETS_TO_CACHE = [
   'js/rep-detail.js',
   'js/catalog.js',
   'js/firms.js',
+  'js/history.js',
   'js/approvals.js',
   'assets/icon-192.svg',
   'assets/icon-512.svg'
