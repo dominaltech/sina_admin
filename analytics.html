@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Operational Analytics - SINA Admin</title>
+  <meta name="theme-color" content="#4C1D95">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .time-filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .time-btn {
+      padding: 7px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-primary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .time-btn:hover {
+      border-color: var(--purple-primary);
+      color: var(--purple-primary);
+    }
+    .time-btn.active {
+      background: var(--purple-primary);
+      border-color: var(--purple-primary);
+      color: #FFFFFF;
+    }
+    .rank-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--purple-tint);
+      color: var(--purple-primary);
+      font-weight: 800;
+      font-size: 0.8rem;
+    }
+    .analytics-grid-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) {
+      .analytics-grid-two {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="admin-container">
+    <!-- Header -->
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-title">Operational Analytics</h1>
+        <p class="page-subtitle">Tabular rankings and performance analytics across representatives, merchant firms, commodities, and expenses.</p>
+      </div>
+      <div>
+        <span class="status-badge active">Data-Driven</span>
+      </div>
+    </div>
+
+    <!-- Timeframe Filter Buttons -->
+    <div class="time-filter-row">
+      <button type="button" class="time-btn" data-time="today">Today</button>
+      <button type="button" class="time-btn" data-time="week">Past 7 Days</button>
+      <button type="button" class="time-btn" data-time="month">This Month</button>
+      <button type="button" class="time-btn active" data-time="all">All Time</button>
+    </div>
+
+    <!-- Overview KPIs -->
+    <div class="admin-kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 20px;">
+      <div class="admin-kpi-card">
+        <div class="kpi-label">Total Procurement Spend</div>
+        <div class="kpi-number text-purple" id="kpi-total-spend">₹0</div>
+        <div class="kpi-sub">Total goods purchased</div>
+      </div>
+      <div class="admin-kpi-card kpi-success">
+        <div class="kpi-label">Field Visits & Bills</div>
+        <div class="kpi-number" style="color: var(--success-color);" id="kpi-total-visits">0</div>
+        <div class="kpi-sub">Total transactions logged</div>
+      </div>
+      <div class="admin-kpi-card">
+        <div class="kpi-label">Average Bill Size</div>
+        <div class="kpi-number" id="kpi-avg-bill">₹0</div>
+        <div class="kpi-sub">Spend per visit</div>
+      </div>
+      <div class="admin-kpi-card kpi-danger">
+        <div class="kpi-label">Field Expenses Total</div>
+        <div class="kpi-number" style="color: var(--danger-color);" id="kpi-total-expenses">₹0</div>
+        <div class="kpi-sub">Travel, fuel, food & repair</div>
+      </div>
+    </div>
+
+    <!-- Section 1: Field Representative Rankings -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--purple-primary); margin: 0;">Representative Performance Rankings</h3>
+          <p class="text-muted" style="font-size: 0.8rem; margin: 2px 0 0 0;">Ranked by total procurement value logged in the field</p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">Rank</th>
+              <th>Representative</th>
+              <th>Assigned Territory</th>
+              <th>Visits / Bills</th>
+              <th>Goods Volume</th>
+              <th>Total Purchases Spent</th>
+              <th>Field Expenses</th>
+            </tr>
+          </thead>
+          <tbody id="reps-ranking-tbody">
+            <tr><td colspan="7" class="text-center text-muted" style="padding: 24px;">Calculating rankings...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 2: Top Merchant Firms -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--purple-primary); margin: 0;">Top Merchant Firms Breakdown</h3>
+          <p class="text-muted" style="font-size: 0.8rem; margin: 2px 0 0 0;">Ranked by total payments received and goods volume supplied</p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">Rank</th>
+              <th>Firm Name</th>
+              <th>Mandi / Address</th>
+              <th>Contact</th>
+              <th>Bills Count</th>
+              <th>Goods Volume</th>
+              <th>Total Amount Disbursed</th>
+            </tr>
+          </thead>
+          <tbody id="firms-ranking-tbody">
+            <tr><td colspan="7" class="text-center text-muted" style="padding: 24px;">Calculating merchant volumes...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 3: Commodity Procurement Analysis -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--purple-primary); margin: 0;">Commodity & Product Procurement Analysis</h3>
+          <p class="text-muted" style="font-size: 0.8rem; margin: 2px 0 0 0;">Volume, total expenditure, and average purchase rates per commodity</p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Commodity / Product</th>
+              <th>Category</th>
+              <th>Total Quantity Procured</th>
+              <th>Average Purchase Rate</th>
+              <th>Total Spend</th>
+              <th>Entries Count</th>
+            </tr>
+          </thead>
+          <tbody id="commodities-ranking-tbody">
+            <tr><td colspan="6" class="text-center text-muted" style="padding: 24px;">Calculating commodity stats...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 4: Two Column Grid: Payment Modes & Expenses Breakdown -->
+    <div class="analytics-grid-two">
+      
+      <!-- Payment Mode Share -->
+      <div class="card">
+        <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--purple-primary); margin-bottom: 12px;">Payment Modes Distribution</h3>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Payment Mode</th>
+                <th>Transactions</th>
+                <th>Total Value</th>
+                <th>% Share</th>
+              </tr>
+            </thead>
+            <tbody id="payment-modes-tbody">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Field Expenses Breakdown -->
+      <div class="card">
+        <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--purple-primary); margin-bottom: 12px;">Field Expenses by Category</h3>
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Expense Category</th>
+                <th>Claims</th>
+                <th>Total Spent</th>
+              </tr>
+            </thead>
+            <tbody id="expenses-breakdown-tbody">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/analytics.js"></script>
+</body>
+</html>

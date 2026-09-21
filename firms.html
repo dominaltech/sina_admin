@@ -3,54 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Firms Directory - SINA Admin</title>
+  <title>Firms Directory & Purchase History - SINA Admin</title>
   <meta name="theme-color" content="#4C1D95">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/admin.css">
   <style>
-    .firm-card {
+    .firm-banner-card {
       background: var(--bg-primary);
-      border: 1.5px solid var(--border-color);
+      border: 1.5px solid var(--purple-border);
       border-radius: var(--radius-md);
-      padding: 14px 16px;
-      cursor: pointer;
-      transition: all 0.2s ease;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
       box-shadow: var(--shadow-sm);
-      margin-bottom: 12px;
-      box-sizing: border-box;
-      width: 100%;
     }
-    .firm-card:hover {
-      border-color: var(--purple-primary);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
+    .firm-kpi-pill {
+      background: var(--purple-tint);
+      border: 1px solid var(--purple-border);
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      text-align: center;
     }
-    .firm-card.selected {
-      border-color: var(--purple-primary);
-      background-color: var(--purple-tint);
-      box-shadow: 0 0 0 2px var(--purple-border);
-    }
-    .firm-visits-table th {
-      background: var(--bg-secondary);
-      font-size: 0.75rem;
-      padding: 10px 14px;
+    .firm-kpi-lbl {
+      font-size: 0.72rem;
+      font-weight: 700;
       color: var(--text-secondary);
       text-transform: uppercase;
-      border-bottom: 1px solid var(--border-color);
     }
-    .firm-visits-table td {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border-color);
-      font-size: 0.88rem;
+    .firm-kpi-num {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--purple-primary);
     }
-    .firm-mobile-card {
-      background: var(--bg-primary);
+    .bill-item-tag {
+      font-size: 0.8rem;
+      padding: 2px 6px;
+      background: var(--bg-secondary);
       border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 12px 14px;
-      margin-bottom: 8px;
+      border-radius: var(--radius-sm);
+      margin-right: 4px;
+      display: inline-block;
+      margin-bottom: 2px;
     }
   </style>
 </head>
@@ -60,91 +59,135 @@
     <!-- Header -->
     <div class="page-header-row">
       <div>
-        <h1 class="page-title">Firms Directory</h1>
-        <p class="page-subtitle">Inspect registered shops, merchant firms, and representative visit spending history.</p>
+        <h1 class="page-title">Firms Directory & Bill History</h1>
+        <p class="page-subtitle">Filter by merchant firm to audit itemized bills, amounts spent, and visiting representatives.</p>
       </div>
       <div>
-        <span class="status-badge active">Auto-Syncing</span>
+        <span class="status-badge active">Live Ledger</span>
       </div>
     </div>
 
     <!-- Summary Metrics -->
     <div class="admin-kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 18px;">
       <div class="admin-kpi-card">
-        <div class="kpi-label">Unique Firms Visited</div>
+        <div class="kpi-label">Unique Merchant Firms</div>
         <div class="kpi-number text-purple" id="kpi-firms-count">0</div>
-        <div class="kpi-sub">Active merchant partners</div>
+        <div class="kpi-sub">Active procurement partners</div>
       </div>
       <div class="admin-kpi-card kpi-success">
         <div class="kpi-label">Total Purchases Spent</div>
         <div class="kpi-number" style="color: var(--success-color);" id="kpi-total-spent">₹0</div>
-        <div class="kpi-sub">Total payments to firms</div>
+        <div class="kpi-sub">Total disbursed to firms</div>
       </div>
       <div class="admin-kpi-card">
-        <div class="kpi-label">Total Field Visits</div>
+        <div class="kpi-label">Total Field Bills</div>
         <div class="kpi-number" id="kpi-total-visits">0</div>
-        <div class="kpi-sub">Visits logged by reps</div>
+        <div class="kpi-sub">Total visit transactions</div>
       </div>
     </div>
 
-    <!-- Search Bar -->
-    <div class="rep-filter-bar" style="margin-bottom: 16px;">
-      <div class="filter-left-col">
-        <div style="display: flex; align-items: center; gap: 8px; width: 100%;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted); flex-shrink: 0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="firm-search-input" class="form-input" placeholder="Search firm name, owner/contact person, phone, or mandi address..." style="width: 100%; border: none; padding: 6px 0; background: transparent; font-size: 0.95rem;">
-        </div>
-      </div>
-    </div>
-
-    <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 12px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <span>Click on any firm below to view which representatives visited that firm and how much they spent</span>
-    </div>
-
-    <!-- Firms List Container -->
-    <div id="firms-list-container">
-      <div class="card text-center text-muted" style="padding: 24px;">Loading firms directory...</div>
-    </div>
-
-    <!-- REPRESENTATIVE VISITS BREAKDOWN SECTION (Below the firms list) -->
-    <div id="firm-detail-section" style="margin-top: 28px; display: none;">
-      <div class="page-header-row" style="margin-bottom: 10px;">
+    <!-- Top Filter Row: Dropdown + Search -->
+    <div class="card" style="margin-bottom: 20px; padding: 16px;">
+      <div style="display: grid; grid-template-columns: 1.5fr 2fr auto; gap: 12px; align-items: center;">
         <div>
-          <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--purple-primary);" id="selected-firm-title">Representatives Who Visited This Firm</h2>
-          <p class="text-muted" style="font-size: 0.85rem;" id="selected-firm-subtitle">Breakdown of representatives, visit dates, and amounts spent at this firm</p>
+          <label class="form-label" for="firm-select-filter" style="font-size: 0.8rem; margin-bottom: 4px;">Choose Firm / Merchant</label>
+          <select id="firm-select-filter" class="form-select" style="font-size: 0.9rem;">
+            <option value="">-- All Merchant Firms --</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="firm-search-input" style="font-size: 0.8rem; margin-bottom: 4px;">Search Firms or Addresses</label>
+          <div style="display: flex; align-items: center; gap: 6px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0 10px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="firm-search-input" class="form-input" placeholder="Search firm name, contact person, phone..." style="border: none; background: transparent; padding: 10px 0;">
+          </div>
+        </div>
+        <div style="padding-top: 22px;">
+          <button type="button" id="btn-clear-firm-filter" class="btn btn-secondary btn-sm" style="padding: 10px 14px;">
+            Reset Filter
+          </button>
         </div>
       </div>
+    </div>
 
-      <!-- Firm Highlight Banner -->
-      <div id="selected-firm-banner" class="card" style="background: var(--bg-primary); border: 1.5px solid var(--purple-border); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px;">
-        <!-- Injected dynamically -->
+    <!-- VIEW 1: SINGLE SELECTED FIRM DETAIL DASHBOARD -->
+    <div id="selected-firm-view" style="display: none;">
+      <!-- Selected Firm Highlight Banner -->
+      <div id="selected-firm-banner" class="firm-banner-card">
+        <!-- Injected dynamically by firms.js -->
       </div>
 
-      <!-- Desktop Visits Table -->
-      <div class="table-responsive cash-log-table-desktop">
-        <table class="admin-table firm-visits-table" style="margin: 0;">
-          <thead>
-            <tr>
-              <th>Representative</th>
-              <th>Visit Date & Time</th>
-              <th>Amount Spent</th>
-              <th>Goods / Items Bought</th>
-              <th>Payment Mode</th>
-            </tr>
-          </thead>
-          <tbody id="firm-visits-tbody">
-            <!-- Injected dynamically -->
-          </tbody>
-        </table>
-      </div>
+      <!-- Itemized Bills Table -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--purple-primary); margin: 0;">Complete Bill & Visit History</h3>
+            <p class="text-muted" style="font-size: 0.8rem; margin: 2px 0 0 0;">All transactions and bills logged at this firm</p>
+          </div>
+          <span class="status-badge active" id="firm-bills-count-badge">0 Bills</span>
+        </div>
 
-      <!-- Mobile Visits Cards List -->
-      <div id="firm-visits-mobile-list" class="cash-log-cards-mobile">
-        <!-- Injected dynamically -->
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Bill Date & Time</th>
+                <th>Representative</th>
+                <th>Goods & Items Bought</th>
+                <th>Amount Spent</th>
+                <th>Payment Mode & Status</th>
+                <th>Proofs</th>
+              </tr>
+            </thead>
+            <tbody id="firm-bills-tbody">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: MASTER FIRMS DIRECTORY TABLE (When no single firm is selected) -->
+    <div id="all-firms-view">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--purple-primary); margin: 0;">Merchant Directory Summary</h3>
+          <span class="text-muted" style="font-size: 0.8rem;">Select any firm above or click below to view bill history</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Firm Name</th>
+                <th>Contact Person & Phone</th>
+                <th>Mandi / Address</th>
+                <th>Bills Logged</th>
+                <th>Total Spent</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="all-firms-tbody">
+              <tr>
+                <td colspan="6" class="text-center text-muted" style="padding: 24px;">Loading firms directory...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
+
+  <!-- High-Res Image Inspection Modal -->
+  <div id="firm-img-modal" class="sina-modal-backdrop" onclick="closeFirmImg()">
+    <div class="sina-modal-card" style="padding: 14px; text-align: center;" onclick="event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span class="status-badge active">Bill & Payment Proof</span>
+        <button class="icon-btn" onclick="closeFirmImg()">&times;</button>
+      </div>
+      <img id="firm-modal-img" src="" style="width: 100%; max-height: 75vh; object-fit: contain; border-radius: var(--radius-md);" alt="Proof">
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script src="js/config.js"></script>

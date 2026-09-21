@@ -351,6 +351,233 @@
       return target;
     }
 
+    async updateEntryPayment(entryId, data) {
+      const entries = JSON.parse(localStorage.getItem('sina_entries') || '[]');
+      const target = entries.find(e => e.id === entryId);
+      if (target) {
+        if (data.status) target.status = data.status;
+        if (data.upi_utr) target.upi_utr = data.upi_utr;
+        localStorage.setItem('sina_entries', JSON.stringify(entries));
+      }
+
+      await this.supabaseRequest(`procurement_entries?id=eq.${entryId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: data.status || 'verified',
+          upi_utr: data.upi_utr || null,
+          updated_at: new Date().toISOString()
+        })
+      });
+
+      this.broadcast('ENTRY_STATUS_UPDATED', { entryId, status: data.status || 'verified', upi_utr: data.upi_utr });
+      return target;
+    }
+
+    // 3a. APP SETTINGS (Mandatory receipt photo toggle)
+    async getSettings() {
+      const remote = await this.supabaseRequest('app_settings?select=*');
+      if (remote && Array.isArray(remote)) {
+        const map = {};
+        remote.forEach(s => { map[s.key] = s.value; });
+        localStorage.setItem('sina_app_settings', JSON.stringify(map));
+        return map;
+      }
+      return JSON.parse(localStorage.getItem('sina_app_settings') || '{"require_expense_receipt":"false"}');
+    }
+
+    async setSetting(key, value) {
+      await this.supabaseRequest(`app_settings?on_conflict=key`, {
+        method: 'POST',
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+        body: JSON.stringify({ key, value: String(value), updated_at: new Date().toISOString() })
+      });
+      const settings = await this.getSettings();
+      settings[key] = String(value);
+      localStorage.setItem('sina_app_settings', JSON.stringify(settings));
+      this.broadcast('SETTING_UPDATED', { key, value: String(value) });
+      return settings;
+    }
+
+    // 3b. OPERATIONAL ANALYTICS DATA GENERATOR
+    async getAnalyticsData(timeframe = 'all') {
+      const allEntries = await this.getProcurementEntries();
+      const allExpenses = await this.getExpenses();
+      const allFloats = await this.getDailyFloats();
+      const profiles = await this.getRepresentatives();
+
+      // Filter by timeframe
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      
+      const filterByTime = (itemDateStr) => {
+        if (!itemDateStr) return false;
+        if (timeframe === 'all') return true;
+        const d = new Date(itemDateStr);
+        if (timeframe === 'today') {
+          return itemDateStr.startsWith(todayStr);
+        } else if (timeframe === 'week') {
+          const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return d >= sevenDaysAgo;
+        } else if (timeframe === 'month') {
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return d >= thirtyDaysAgo;
+        }
+        return true;
+      };
+
+      const entries = allEntries.filter(e => filterByTime(e.created_at));
+      const expenses = allExpenses.filter(e => filterByTime(e.created_at || e.date));
+
+      // 1. Overview KPIs
+      const totalSpend = entries.reduce((acc, e) => acc + (parseFloat(e.total_amount) || 0), 0);
+      const totalVisits = entries.length;
+      const totalExpenses = expenses.reduce((acc, exp) => acc + (parseFloat(exp.amount) || 0), 0);
+      const totalGoodsQty = entries.reduce((acc, e) => acc + (parseFloat(e.quantity) || 0), 0);
+      const avgBill = totalVisits > 0 ? (totalSpend / totalVisits) : 0;
+
+      // 2. Representative Rankings
+      const repMap = new Map();
+      profiles.forEach(p => {
+        repMap.set(p.id, {
+          id: p.id,
+          name: p.name,
+          route: p.assigned_route || 'All Routes',
+          visits: 0,
+          spend: 0,
+          qty: 0,
+          expenses: 0
+        });
+      });
+
+      entries.forEach(e => {
+        const repId = e.representative_id || '22222222-2222-2222-2222-222222222222';
+        if (!repMap.has(repId)) {
+          repMap.set(repId, { id: repId, name: e.rep_name || 'Rahul Sharma', route: 'General', visits: 0, spend: 0, qty: 0, expenses: 0 });
+        }
+        const r = repMap.get(repId);
+        r.visits += 1;
+        r.spend += parseFloat(e.total_amount) || 0;
+        r.qty += parseFloat(e.quantity) || 0;
+      });
+
+      expenses.forEach(exp => {
+        const repId = exp.representative_id;
+        if (repMap.has(repId)) {
+          repMap.get(repId).expenses += parseFloat(exp.amount) || 0;
+        }
+      });
+
+      const repRankings = Array.from(repMap.values()).sort((a, b) => b.spend - a.spend);
+
+      // 3. Top Merchant Firms
+      const firmsMap = new Map();
+      entries.forEach(e => {
+        const firmName = e.firm_name.trim();
+        if (!firmsMap.has(firmName)) {
+          firmsMap.set(firmName, {
+            firm_name: firmName,
+            contact_person: e.contact_person,
+            mobile: e.mobile,
+            address: e.address,
+            total_spent: 0,
+            visits_count: 0,
+            total_qty: 0,
+            reps: new Set()
+          });
+        }
+        const f = firmsMap.get(firmName);
+        f.total_spent += parseFloat(e.total_amount) || 0;
+        f.visits_count += 1;
+        f.total_qty += parseFloat(e.quantity) || 0;
+        if (e.rep_name) f.reps.add(e.rep_name);
+      });
+
+      const topFirms = Array.from(firmsMap.values())
+        .map(f => ({ ...f, reps: Array.from(f.reps).join(', ') }))
+        .sort((a, b) => b.total_spent - a.total_spent);
+
+      // 4. Commodity / Product Analysis
+      const commMap = new Map();
+      entries.forEach(e => {
+        // Multi-items or single item
+        const items = e.items && e.items.length > 0 ? e.items : [{
+          product_name: e.type || e.product_name || e.category_name || 'Goods',
+          category_name: e.category_name || 'General',
+          quantity: e.quantity || 1,
+          unit: e.unit || 'per_kg',
+          line_total: e.total_amount || 0,
+          rate: e.rate || 0
+        }];
+
+        items.forEach(it => {
+          const key = (it.product_name || it.type || 'Goods').trim();
+          if (!commMap.has(key)) {
+            commMap.set(key, {
+              name: key,
+              category: it.category_name || 'General',
+              unit: it.unit || 'per_kg',
+              total_qty: 0,
+              total_spend: 0,
+              entries_count: 0
+            });
+          }
+          const c = commMap.get(key);
+          c.total_qty += parseFloat(it.quantity) || 0;
+          c.total_spend += parseFloat(it.line_total) || 0;
+          c.entries_count += 1;
+        });
+      });
+
+      const commodities = Array.from(commMap.values())
+        .map(c => ({
+          ...c,
+          avg_rate: c.total_qty > 0 ? (c.total_spend / c.total_qty) : 0
+        }))
+        .sort((a, b) => b.total_spend - a.total_spend);
+
+      // 5. Payment Mode Distribution
+      const modeMap = {
+        cash: { mode: 'Cash', count: 0, total: 0 },
+        upi: { mode: 'UPI', count: 0, total: 0 },
+        bank_transfer: { mode: 'Bank Transfer', count: 0, total: 0 }
+      };
+
+      entries.forEach(e => {
+        const m = e.payment_mode || 'cash';
+        if (modeMap[m]) {
+          modeMap[m].count += 1;
+          modeMap[m].total += parseFloat(e.total_amount) || 0;
+        }
+      });
+
+      const paymentModes = Object.values(modeMap).map(m => ({
+        ...m,
+        pct: totalSpend > 0 ? ((m.total / totalSpend) * 100).toFixed(1) : '0'
+      }));
+
+      // 6. Expense Breakdown by Category
+      const expCatMap = {};
+      expenses.forEach(exp => {
+        const cat = exp.category || 'misc';
+        if (!expCatMap[cat]) {
+          expCatMap[cat] = { category: cat, count: 0, total: 0 };
+        }
+        expCatMap[cat].count += 1;
+        expCatMap[cat].total += parseFloat(exp.amount) || 0;
+      });
+
+      const expenseBreakdown = Object.values(expCatMap).sort((a, b) => b.total - a.total);
+
+      return {
+        overview: { totalSpend, totalVisits, totalGoodsQty, totalExpenses, avgBill },
+        repRankings,
+        topFirms,
+        commodities,
+        paymentModes,
+        expenseBreakdown
+      };
+    }
+
     // 3b. FIRMS DIRECTORY & REPRESENTATIVE SPENDING SUMMARY
     async getFirmsSummary() {
       const entries = await this.getProcurementEntries();
